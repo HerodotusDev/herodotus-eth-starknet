@@ -36,9 +36,10 @@ async def setup():
 async def test_receive_from_l1():
     starknet, messages_proxy, account, signer = await setup()
 
-    l1_headers_store = await starknet.deploy(source="contracts/starknet/L1HeadersStore.cairo", cairo_path=["contracts"])
-
     l1_messages_sender = 0xbeaf
+
+    l1_headers_store = await starknet.deploy(source="contracts/starknet/L1HeadersStore.cairo", cairo_path=["contracts"], constructor_calldata=[messages_proxy.contract_address])
+
     l1_headers_store_addr = l1_headers_store.contract_address
     owner = account.contract_address
     await signer.send_transaction(
@@ -47,10 +48,6 @@ async def test_receive_from_l1():
     message = bytearray.fromhex(mocked_blocks[0]["parentHash"].hex()[2:])
     chunked_message = chunk_bytes_input(message)
     formatted_words = list(map(bytes_to_int_little, chunked_message))
-
-    # Initialize l1 headers store contract
-    await signer.send_transaction(
-        account, l1_headers_store.contract_address, 'initialize', [messages_proxy.contract_address])
     
     # send message to l2
     await starknet.send_message_to_l2(

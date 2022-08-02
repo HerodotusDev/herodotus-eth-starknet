@@ -5,6 +5,8 @@ from typing import NamedTuple
 from starkware.starknet.testing.contract import StarknetContract
 from starkware.starknet.testing.starknet import Starknet
 from starkware.starkware_utils.error_handling import StarkException
+from starkware.starknet.testing.contract_utils import get_contract_class
+
 
 from utils.types import Data, BlockHeaderIndexes
 from utils.Signer import Signer
@@ -14,6 +16,13 @@ from utils.block_header import build_block_header
 
 from mocks.blocks import mocked_blocks
 from mocks.trie_proofs import trie_proofs
+
+from starkware.starknet.core.os.contract_address.contract_address import (
+    calculate_contract_address_from_hash,
+)
+from starkware.starknet.core.os.class_hash import compute_class_hash
+from starkware.starknet.definitions import fields
+
 
 
 bytes_to_int_big = lambda word: bytes_to_int(word)
@@ -37,9 +46,9 @@ class RegistryTestsDeps(NamedTuple):
 def event_loop():
     return asyncio.new_event_loop()
 
-async def setup():
+async def setup(constructor_calldata=[]):
     starknet = await Starknet.empty()
-    facts_registry = await starknet.deploy(source="contracts/starknet/FactsRegistry.cairo", cairo_path=["contracts"])
+    facts_registry = await starknet.deploy(source="contracts/starknet/FactsRegistry.cairo", cairo_path=["contracts"], constructor_calldata=constructor_calldata)
     account, signer = await create_account(starknet)
 
     return BaseTestsDeps(
@@ -54,16 +63,12 @@ async def base_factory():
 
 @pytest.fixture(scope='module')
 async def registry_initialized():
-    starknet, facts_registry, account, signer = await setup()
+    starknet = await Starknet.empty()
+    account, signer = await create_account(starknet)
 
-    storage_proof = await starknet.deploy(source="contracts/starknet/L1HeadersStore.cairo", cairo_path=["contracts"])
     l1_relayer_account, l1_relayer_signer = await create_account(starknet)
-
-    await signer.send_transaction(
-        account, storage_proof.contract_address, 'initialize', [l1_relayer_account.contract_address])
-
-    await signer.send_transaction(
-        account, facts_registry.contract_address, 'initialize', [storage_proof.contract_address])
+    storage_proof = await starknet.deploy(source="contracts/starknet/L1HeadersStore.cairo", cairo_path=["contracts"], constructor_calldata=[l1_relayer_account.contract_address])
+    facts_registry = await starknet.deploy(source="contracts/starknet/FactsRegistry.cairo", cairo_path=["contracts"], constructor_calldata=[storage_proof.contract_address])
 
     block = mocked_blocks[3]
     block_header = build_block_header(block)
@@ -95,26 +100,6 @@ async def registry_initialized():
         l1_relayer_account=l1_relayer_account,
         l1_relayer_signer=l1_relayer_signer
     )
-
-
-@pytest.mark.asyncio
-async def test_initializer(base_factory):
-    starknet, facts_registry, account, signer = base_factory
-
-    l1_headers_store_addr = 0xbeaf
-
-    await signer.send_transaction(
-        account, facts_registry.contract_address, 'initialize', [l1_headers_store_addr])
-
-    # Ensure address has been correctly set
-    get_l1_headers_store_addr_call = await facts_registry.get_l1_headers_store_addr().call()
-    set_l1_headers_store_addr = get_l1_headers_store_addr_call.result.res
-    assert set_l1_headers_store_addr == l1_headers_store_addr
-
-    # Ensure contract can't be initialized one more time
-    with pytest.raises(StarkException):
-        await signer.send_transaction(
-            account, facts_registry.contract_address, 'initialize', [l1_headers_store_addr])
 
 
 @pytest.mark.asyncio

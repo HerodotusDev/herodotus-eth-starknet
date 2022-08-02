@@ -31,11 +31,6 @@ from starknet.lib.swap_endianness import swap_endianness_64
 func _l1_messages_origin() -> (res: felt):
 end
 
-# Indicates that the contract has been initialized
-@storage_var
-func _initialized() -> (res: felt):
-end
-
 @storage_var
 func _latest_l1_block() -> (res: felt):
 end
@@ -87,15 +82,6 @@ end
 ####################################################
 #                   VIEW FUNCTIONS
 ####################################################
-
-@view
-func get_initialized{
-        syscall_ptr: felt*,
-        pedersen_ptr: HashBuiltin*,
-        range_check_ptr
-    } () -> (res: felt):
-    return _initialized.read()
-end
 
 @view
 func get_parent_hash{
@@ -196,15 +182,12 @@ func get_gas_used{
     return _block_gas_used.read(block_number)
 end
 
-@external
-func initialize{
-        pedersen_ptr: HashBuiltin*,
-        syscall_ptr: felt*,
-        range_check_ptr
-    } (l1_messages_origin: felt):
-    let (initialized) = _initialized.read()
-    assert initialized = 0
-    _initialized.write(1)
+@constructor
+func constructor{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr,
+}(l1_messages_origin: felt):
     _l1_messages_origin.write(l1_messages_origin)
     return ()
 end

@@ -58,24 +58,11 @@ func computation_finalized(
 end
 
 @storage_var
-func _initialized() -> (res: felt):
-end
-
-@storage_var
 func _l1_headers_store_addr() -> (res: felt):
 end
 
 @storage_var
 func _twap_computation_cache(computation_id: felt, slot: felt) -> (res: felt):
-end
-
-@view
-func get_initialized{
-        syscall_ptr: felt*,
-        pedersen_ptr: HashBuiltin*,
-        range_check_ptr
-    }() -> (res: felt):
-    return _initialized.read()
 end
 
 @view
@@ -96,15 +83,12 @@ func get_twap_computation_cache{
     return _twap_computation_cache.read(computation_id, slot)
 end
 
-@external
-func initialize{
+@constructor
+func constructor{
         pedersen_ptr: HashBuiltin*,
         syscall_ptr: felt*,
         range_check_ptr
     } (l1_headers_store_addr: felt):
-    let (initialized) = _initialized.read()
-    assert initialized = 0
-    _initialized.write(1)
     _l1_headers_store_addr.write(l1_headers_store_addr)
     return ()
 end

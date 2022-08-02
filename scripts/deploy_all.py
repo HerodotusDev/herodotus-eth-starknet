@@ -38,20 +38,20 @@ async def test_deploy():
     )
 
     msg_dep_gateway_response = await gateway_client.add_transaction(msg_dep_contract_tx)
-    l2_msg_contract_address = int(msg_dep_gateway_response["address"], 16)
+    l1_messages_proxy_contract_address = int(msg_dep_gateway_response["address"], 16)
     assert (msg_dep_gateway_response["code"] == StarkErrorCode.TRANSACTION_RECEIVED.name)
 
     # Deploy L1HeadersStore - Starknet
     headers_dep_contract_tx = Deploy(
         contract_address_salt=fields.ContractAddressSalt.get_random_value(),
-        constructor_calldata=[],
+        constructor_calldata=[l1_messages_proxy_contract_address],
         contract_definition=compile_starknet_files(
                 files=['contracts/starknet/L1HeadersStore.cairo'], debug_info=True, cairo_path=['contracts']
             ),
         version=0
     )
     headers_dep_gateway_response = await gateway_client.add_transaction(headers_dep_contract_tx)
-    l2_headers_contract_address = int(headers_dep_gateway_response["address"], 16)
+    l1_headers_store_contract_address = int(headers_dep_gateway_response["address"], 16)
     assert (headers_dep_gateway_response["code"] == StarkErrorCode.TRANSACTION_RECEIVED.name)
 
     # Deploy L1 sender contract
@@ -66,7 +66,7 @@ async def test_deploy():
     w3.eth.default_account = account
 
     L1MessagesSender = w3.eth.contract(abi=contract_build['abi'], bytecode=contract_build['bytecode'])
-    deployment_tx = L1MessagesSender.constructor(starknet_core_addr, l2_msg_contract_address).buildTransaction({
+    deployment_tx = L1MessagesSender.constructor(starknet_core_addr, l1_messages_proxy_contract_address).buildTransaction({
         'from': account.address,
         'nonce': w3.eth.getTransactionCount(account.address),
         'gas': 2000000,
@@ -78,75 +78,42 @@ async def test_deploy():
     tx_receipt = w3.eth.waitForTransactionReceipt(tx_hash)
     l1_contract_addr = tx_receipt.contractAddress
 
-    # Initialize L1HeadersStore contract - Starknet
-    l2_headers_contract_init_tx = InvokeFunction(
-            max_fee=0,
-            version=0,
-            contract_address=l2_headers_contract_address,
-            entry_point_selector=get_selector_from_name('initialize'),
-            calldata=[l2_msg_contract_address],
-            signature=[])
-
-    # Initialize and L1MessagingContract- Starknet
-    l2_msg_contract_owner = 0x02a57f0737b8c4beb1ddfb013f046520680a5f0e056505e6420c0ff827b0c45c
-
-    l2_msg_contract_init_tx = InvokeFunction(
-            max_fee=0,
-            version=0,
-            contract_address=l2_msg_contract_address,
-            entry_point_selector=get_selector_from_name('initialize'),
-            calldata=[int(l1_contract_addr, 16), l2_headers_contract_address, l2_msg_contract_owner],
-            signature=[])
-
-    await gateway_client.add_transaction(l2_headers_contract_init_tx)
-    await gateway_client.add_transaction(l2_msg_contract_init_tx)
 
     # Deploy and initialize TWAP contract
     twap_dep_contract_tx = Deploy(
         contract_address_salt=fields.ContractAddressSalt.get_random_value(),
-        constructor_calldata=[],
+        constructor_calldata=[l1_headers_store_contract_address],
         contract_definition=compile_starknet_files(
                 files=['contracts/starknet/TWAP.cairo'], debug_info=True, cairo_path=['contracts']
-            )
+            ),
+        version=0
     )
     twap_dep_gateway_response = await gateway_client.add_transaction(twap_dep_contract_tx)
     twap_contract_address = int(twap_dep_gateway_response["address"], 16)
     assert (twap_dep_gateway_response["code"] == StarkErrorCode.TRANSACTION_RECEIVED.name)
-    twap_contract_init_tx = InvokeFunction(
-            max_fee=0,
-            version=0,
-            contract_address=twap_contract_address,
-            entry_point_selector=get_selector_from_name('initialize'),
-            calldata=[l2_headers_contract_address],
-            signature=[])
-    await gateway_client.add_transaction(twap_contract_init_tx)
+
 
     # Deploy and initialize Facts Registry contract
     facts_registry_dep_contract_tx = Deploy(
         contract_address_salt=fields.ContractAddressSalt.get_random_value(),
-        constructor_calldata=[],
+        constructor_calldata=[l1_headers_store_contract_address],
         contract_definition=compile_starknet_files(
                 files=['contracts/starknet/FactsRegistry.cairo'], debug_info=True, cairo_path=['contracts']
-            )
+            ),
+        version=0
     )
     facts_registry_dep_gateway_response = await gateway_client.add_transaction(facts_registry_dep_contract_tx)
     facts_registry_contract_address = int(facts_registry_dep_gateway_response["address"], 16)
     assert (facts_registry_dep_gateway_response["code"] == StarkErrorCode.TRANSACTION_RECEIVED.name)
-    facts_registry_contract_init_tx = InvokeFunction(
-            max_fee=0,
-            version=0,
-            contract_address=facts_registry_contract_address,
-            entry_point_selector=get_selector_from_name('initialize'),
-            calldata=[l2_headers_contract_address],
-            signature=[])
-    await gateway_client.add_transaction(facts_registry_contract_init_tx)
 
     print('\n')
     print(f"L1: contract address: {l1_contract_addr}")
-    print(f"Starknet: L1 headers contract address: {hex(l2_headers_contract_address)}")
-    print(f"Starknet: L1 messages recipient: {hex(l2_msg_contract_address)}")
+    print(f"Starknet: L1 headers store contract address: {hex(l1_headers_store_contract_address)}")
+    print(f"Starknet: L1 messages recipient: {hex(l1_messages_proxy_contract_address)}")
     print(f"Starknet: Facts registry: {hex(facts_registry_contract_address)}")
     print(f"Starknet: TWAP: {hex(twap_contract_address)}")
+
+    print(f"Deployments successfull!!! Do not forget about initializing {hex(l1_messages_proxy_contract_address)} manually")
 
     assert 1 == 1
 

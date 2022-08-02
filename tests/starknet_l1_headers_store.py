@@ -30,11 +30,10 @@ def event_loop():
 
 async def setup():
     starknet = await Starknet.empty()
-    storage_proof = await starknet.deploy(source="contracts/starknet/L1HeadersStore.cairo", cairo_path=["contracts"])
     account, signer = await create_account(starknet)
     l1_relayer_account, l1_relayer_signer = await create_account(starknet)
-    await signer.send_transaction(
-        account, storage_proof.contract_address, 'initialize', [l1_relayer_account.contract_address])
+
+    storage_proof = await starknet.deploy(source="contracts/starknet/L1HeadersStore.cairo", cairo_path=["contracts"], constructor_calldata=[l1_relayer_account.contract_address])
     
     return TestsDeps(
         starknet=starknet,

@@ -45,14 +45,8 @@ async def setup(initial_l1_blockhash = mocked_blocks[0]['hash'].hex()[2:], initi
     starknet = await Starknet.empty()
     account, signer = await create_account(starknet)
     l1_relayer_account, l1_relayer_signer = await create_account(starknet)
-    twap = await starknet.deploy(source="contracts/starknet/TWAP.cairo", cairo_path=["contracts"])
-    storage_proof = await starknet.deploy(source="contracts/starknet/L1HeadersStore.cairo", cairo_path=["contracts"])
-
-    await signer.send_transaction(
-        account, storage_proof.contract_address, 'initialize', [l1_relayer_account.contract_address])
-
-    await signer.send_transaction(
-        account, twap.contract_address, 'initialize', [storage_proof.contract_address])
+    storage_proof = await starknet.deploy(source="contracts/starknet/L1HeadersStore.cairo", cairo_path=["contracts"], constructor_calldata=[l1_relayer_account.contract_address])
+    twap = await starknet.deploy(source="contracts/starknet/TWAP.cairo", cairo_path=["contracts"], constructor_calldata=[storage_proof.contract_address])
 
     await submit_l1_parent_hash(l1_relayer_signer, l1_relayer_account, storage_proof, initial_l1_blockhash, initial_block_number)
 

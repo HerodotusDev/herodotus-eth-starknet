@@ -38,9 +38,6 @@ namespace IL1HeadersStore:
     end
 end
 
-@storage_var
-func _initialized() -> (res: felt):
-end
 
 @storage_var
 func _l1_headers_store_addr() -> (res : felt):
@@ -60,14 +57,6 @@ end
 
 @storage_var
 func _verified_account_nonce(account : felt, block : felt) -> (res : felt):
-end
-
-@view
-func get_initialized{
-        syscall_ptr: felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr } () -> (res: felt):
-    return _initialized.read()
 end
 
 @view
@@ -110,16 +99,13 @@ func get_verified_account_nonce{
     return _verified_account_nonce.read(account_160, block)
 end
 
-# Initializes the contract
-@external
-func initialize{
-        pedersen_ptr: HashBuiltin*,
-        syscall_ptr: felt*,
-        range_check_ptr
-    } (l1_headers_store_addr: felt):
-    let (initialized) = _initialized.read()
-    assert initialized = 0
-    _initialized.write(1)
+
+@constructor
+func constructor{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr,
+}(l1_headers_store_addr: felt):
     _l1_headers_store_addr.write(l1_headers_store_addr)
     return ()
 end
