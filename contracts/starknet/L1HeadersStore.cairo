@@ -218,7 +218,7 @@ func receive_from_l1{
     let (local update_latest) = is_le(current_latest, block_number)
 
     if update_latest == 1:
-        _latest_l1_block.write(block_number)
+        _latest_l1_block.write(block_number - 1)
         return ()
     else:
         return ()

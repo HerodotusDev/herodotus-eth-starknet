@@ -88,7 +88,8 @@ async def test_submit_hash_update_latest_block(factory):
 
     current_latest = (await storage_proof.get_latest_l1_block().call()).result.res
 
-    assert current_latest == block_number 
+    # The latest block number stored is the parent block of the one submitted, therefore we subtract 1
+    assert current_latest == block_number - 1
 
     print(f"Execution number of steps: {n_steps}")
 
