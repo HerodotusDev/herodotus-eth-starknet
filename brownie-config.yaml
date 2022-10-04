@@ -1,0 +1,27 @@
+project_structure:
+  build: build
+  contracts: contracts/ethereum
+  interfaces: contracts/ethereum/interfaces
+  reports: reports
+  scripts: scripts
+  tests: tests/ethereum
+compiler:
+  solc:
+    version: 0.8.9
+    remappings:
+      - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.3.2"
+
+dependencies:
+  - OpenZeppelin/openzeppelin-contracts@4.3.2
+
+console:
+  show_colors: false
+
+live:
+  - name: Ethereum
+    networks:
+      - name: Goerli (Alchemy)
+        chainid: 5
+        id: goerli
+        host: https://mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-ropsten.etherscan.io/api
