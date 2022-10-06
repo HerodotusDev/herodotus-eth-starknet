@@ -1,0 +1,25 @@
+["protostar.config"]
+protostar_version = "0.5.0"
+
+["protostar.project"]
+libs_path = "./starknet/lib"
+
+["protostar.contracts"]
+Account = [
+    "./src/external/Account.cairo"
+]
+FactsRegistry = [
+    "./src/FactsRegistry.cairo"
+]
+L1HeadersStore = [
+    "./src/L1HeadersStore.cairo"
+]
+L1MessagesProxy = [
+    "./src/L1MessagesProxy.cairo"
+]
+TWAP = [
+    "./src/TWAP.cairo"
+]
+CallbackReceiverMock = [
+    "./src/mocks/CallbackReceiverMock.cairo"
+]
