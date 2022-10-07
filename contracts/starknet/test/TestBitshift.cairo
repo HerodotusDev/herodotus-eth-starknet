@@ -4,11 +4,11 @@
 from starknet.lib.bitshift import bitshift_right, bitshift_left
 
 @view
-func test_bitshift_right{range_check_ptr}(word: felt, num_bits: felt) -> (shifted: felt):
-    return bitshift_right(word, num_bits)
-end
+func test_bitshift_right{range_check_ptr}(word: felt, num_bits: felt) -> (shifted: felt) {
+    return bitshift_right(word, num_bits);
+}
 
 @view
-func test_bitshift_left{range_check_ptr}(word: felt, num_bits: felt) -> (shifted: felt):
-    return bitshift_left(word, num_bits)
-end
+func test_bitshift_left{range_check_ptr}(word: felt, num_bits: felt) -> (shifted: felt) {
+    return bitshift_left(word, num_bits);
+}
