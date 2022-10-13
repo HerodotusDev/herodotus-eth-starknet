@@ -59,7 +59,6 @@ func test_swap_endianness_small_words{range_check_ptr, bitwise_ptr: BitwiseBuilt
 }
 
 func helper_test_swap_endianness_small_words{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(i: felt) -> () {
-    %{ print('->' i) %}
     if (i == 0) {
         return ();
     }
