@@ -7,7 +7,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.math import assert_not_zero
 from starkware.cairo.common.uint256 import Uint256
 
-from starknet.types import (
+from lib.types import (
     Keccak256Hash,
     StorageSlot,
     Address,
@@ -16,15 +16,15 @@ from starknet.types import (
     reconstruct_ints_sequence_list,
 )
 
-from starknet.lib.unsafe_keccak import keccak256
 from starkware.cairo.common.cairo_keccak.keccak import finalize_keccak
 
-from starknet.lib.trie_proofs import verify_proof
-from starknet.lib.ints_to_uint256 import ints_to_uint256
-from starknet.lib.bitset import bitset_get
-from starknet.lib.extract_from_rlp import to_list, extract_list_values, extractElement, extract_data
-from starknet.lib.address import address_words64_to_160bit
-from starknet.lib.swap_endianness import swap_endianness_64
+from lib.unsafe_keccak import keccak256
+from lib.trie_proofs import verify_proof
+from lib.ints_to_uint256 import ints_to_uint256
+from lib.bitset import bitset_get
+from lib.extract_from_rlp import to_list, extract_list_values, extractElement, extract_data
+from lib.address import address_words64_to_160bit
+from lib.swap_endianness import swap_endianness_64
 
 // L1HeadersStore simplified interface
 @contract_interface

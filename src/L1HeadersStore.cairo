@@ -7,11 +7,11 @@ from starkware.starknet.common.syscalls import get_caller_address
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.math_cmp import is_le
 
-from starknet.lib.unsafe_keccak import keccak256
 from starkware.cairo.common.cairo_keccak.keccak import finalize_keccak
 
-from starknet.types import Keccak256Hash, Address, IntsSequence, slice_arr
-from starknet.lib.blockheader_rlp_extractor import (
+from lib.unsafe_keccak import keccak256
+from lib.types import Keccak256Hash, Address, IntsSequence, slice_arr
+from lib.blockheader_rlp_extractor import (
     decode_parent_hash,
     decode_state_root,
     decode_transactions_root,
@@ -23,8 +23,8 @@ from starknet.lib.blockheader_rlp_extractor import (
     decode_timestamp,
     decode_gas_used,
 )
-from starknet.lib.bitset import bitset_get
-from starknet.lib.swap_endianness import swap_endianness_64
+from lib.bitset import bitset_get
+from lib.swap_endianness import swap_endianness_64
 
 // Temporary auth var for authenticating mocked L1 handlers
 @storage_var

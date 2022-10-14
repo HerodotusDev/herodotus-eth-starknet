@@ -10,12 +10,11 @@ from starkware.cairo.common.hash import hash2
 from starkware.cairo.common.math import assert_not_zero, assert_le, unsigned_div_rem
 from starkware.cairo.common.math_cmp import is_le
 
-from starknet.lib.unsafe_keccak import keccak256
 from starkware.cairo.common.cairo_keccak.keccak import finalize_keccak
 
-from starknet.types import Keccak256Hash, IntsSequence, slice_arr
-
-from starknet.lib.blockheader_rlp_extractor import (
+from lib.unsafe_keccak import keccak256
+from lib.types import Keccak256Hash, IntsSequence, slice_arr
+from lib.blockheader_rlp_extractor import (
     decode_parent_hash,
     decode_state_root,
     decode_transactions_root,

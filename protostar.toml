@@ -2,7 +2,10 @@
 protostar_version = "0.5.0"
 
 ["protostar.project"]
-libs_path = "./starknet/lib"
+libs_path = "lib"
+
+["protostar.shared_command_configs"]
+cairo_path = ["./lib/cairo_contracts/src"]
 
 ["protostar.contracts"]
 Account = [
@@ -19,7 +22,4 @@ L1MessagesProxy = [
 ]
 TWAP = [
     "./src/TWAP.cairo"
-]
-CallbackReceiverMock = [
-    "./src/mocks/CallbackReceiverMock.cairo"
 ]

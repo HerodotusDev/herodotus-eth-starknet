@@ -8,8 +8,8 @@ from starkware.cairo.common.signature import verify_ecdsa_signature
 from starkware.cairo.common.hash_state import hash_felts
 from starkware.cairo.common.math_cmp import is_not_zero, is_le
 
-from starknet.types import Keccak256Hash
-from starknet.lib.keccak_compare import keccak_compare
+from lib.types import Keccak256Hash
+from lib.keccak_compare import keccak_compare
 from starkware.cairo.common.uint256 import Uint256
 
 // L1HeadersStore simplified interface
