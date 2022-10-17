@@ -12,6 +12,12 @@ from lib.types import Keccak256Hash
 from lib.keccak_compare import keccak_compare
 from starkware.cairo.common.uint256 import Uint256
 
+// @dev This file mirrors L1MessagesProxy to the exception
+// of having "receive_from_l1" having @external instead of @l1_handler type
+// for integration test.
+// This will be removed when send_message_from_l2 will be available in the newest protostar version:
+// https://github.com/software-mansion/protostar/pull/940/files
+
 // L1HeadersStore simplified interface
 @contract_interface
 namespace IL1HeadersStore {
@@ -302,7 +308,7 @@ func relay_optimistic{
     return ();
 }
 
-@l1_handler
+@external
 func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}(
     from_address: felt,
     parent_hash_word_1: felt,
