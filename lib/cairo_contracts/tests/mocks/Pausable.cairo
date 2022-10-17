@@ -17,9 +17,7 @@ func counter() -> (count: felt) {
 }
 
 @view
-func isPaused{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
-    paused: felt
-) {
+func isPaused{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (paused: felt) {
     return Pausable.is_paused();
 }
 

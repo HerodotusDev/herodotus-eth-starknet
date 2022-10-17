@@ -15,7 +15,7 @@ from starkware.starknet.common.syscalls import (
     call_contract,
     get_caller_address,
     get_contract_address,
-    get_tx_info
+    get_tx_info,
 )
 from starkware.cairo.common.cairo_secp.signature import verify_eth_signature_uint256
 from openzeppelin.utils.constants.library import IACCOUNT_ID, IERC165_ID
@@ -83,9 +83,9 @@ namespace Account {
         return Account_public_key.read();
     }
 
-    func supports_interface{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(interface_id: felt) -> (
-        success: felt
-    ) {
+    func supports_interface{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        interface_id: felt
+    ) -> (success: felt) {
         if (interface_id == IERC165_ID) {
             return (success=TRUE);
         }

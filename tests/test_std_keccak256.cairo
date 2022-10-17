@@ -24,7 +24,7 @@ func test_against_web3{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
     alloc_locals;
     local keccak_input_length;
     local input_len;
-    let (input : felt*) = alloc();
+    let (input: felt*) = alloc();
     setup_python_defs();
     %{
         from utils.helpers import (concat_arr, bytes_to_int, Encoding)
@@ -85,10 +85,10 @@ func test_against_web3_multiple_inputs{range_check_ptr, bitwise_ptr: BitwiseBuil
 
     local keccak_input_length;
     local input_len;
-    let (input : felt*) = alloc();
+    let (input: felt*) = alloc();
     local keccak_input_2_length;
     local input_2_len;
-    let (input_2 : felt*) = alloc();
+    let (input_2: felt*) = alloc();
     %{
         from utils.helpers import (concat_arr, bytes_to_int, Encoding)
         from utils.types import Data
@@ -120,9 +120,8 @@ func test_against_web3_multiple_inputs{range_check_ptr, bitwise_ptr: BitwiseBuil
         ids.input_len = len(ipt)
     %}
     let (hash1, hash2) = test_keccak256_std_multiple(
-        keccak_input_length, input_len, input,
-        keccak_input_2_length, input_2_len, input_2
-        );
+        keccak_input_length, input_len, input, keccak_input_2_length, input_2_len, input_2
+    );
     %{
         extracted1 = [ids.hash1.word_1, ids.hash1.word_2, ids.hash1.word_3, ids.hash1.word_4]
         extracted2 = [ids.hash2.word_1, ids.hash2.word_2, ids.hash2.word_3, ids.hash2.word_4]
@@ -186,7 +185,7 @@ func test_against_web3_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> ()
     alloc_locals;
     local keccak_input_length;
     local input_len;
-    let (input : felt*) = alloc();
+    let (input: felt*) = alloc();
     setup_python_defs();
     %{
         from utils.helpers import (concat_arr, bytes_to_int, Encoding)
@@ -243,7 +242,7 @@ func test_hash_header{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
     alloc_locals;
     local keccak_input_length;
     local input_len;
-    let (input : felt*) = alloc();
+    let (input: felt*) = alloc();
     setup_python_defs();
     %{
         from utils.helpers import (bytes_to_int, Encoding)

@@ -27,8 +27,9 @@ func initializer{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }
 
 @view
-func initialized{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() 
--> (initialized: felt) {
+func initialized{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
+    initialized: felt
+) {
     let (initialized) = Proxy_initialized.read();
     return (initialized=initialized);
 }

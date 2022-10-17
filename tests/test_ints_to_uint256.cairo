@@ -11,7 +11,7 @@ from lib.ints_to_uint256 import ints_to_uint256
 @view
 func test_covert_0{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
     alloc_locals;
-    let (array : felt*) = alloc();
+    let (array: felt*) = alloc();
     assert [array] = 0;
     local input: IntsSequence = IntsSequence(array, 1, 1);
     let (local out: Uint256) = ints_to_uint256(ints=input);
@@ -23,7 +23,7 @@ func test_covert_0{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
 @view
 func test_covert_1{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
     alloc_locals;
-    let (array : felt*) = alloc();
+    let (array: felt*) = alloc();
     assert [array] = 1;
     local input: IntsSequence = IntsSequence(array, 1, 1);
     let (local out: Uint256) = ints_to_uint256(ints=input);
@@ -37,10 +37,10 @@ func test_covert_random{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(rand_int:
     alloc_locals;
     %{
         assume(ids.rand_int >= 0)
-        assume(ids.rand_int < 2 ** 256 - 1) 
-     %}
+        assume(ids.rand_int < 2 ** 256 - 1)
+    %}
 
-    let (array : felt*) = alloc();
+    let (array: felt*) = alloc();
     assert [array] = rand_int;
     local input: IntsSequence = IntsSequence(array, 1, 1);
     let (local out: Uint256) = ints_to_uint256(ints=input);
@@ -53,7 +53,7 @@ func test_covert_random{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(rand_int:
 @view
 func test_covert_out_of_bound{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
     alloc_locals;
-    let (array : felt*) = alloc();
+    let (array: felt*) = alloc();
     local num;
     %{
         from random import randint

@@ -33,7 +33,6 @@ func test_swap_endianness_full_word{range_check_ptr, bitwise_ptr: BitwiseBuiltin
         big_to_little_python = byteswap_64bit_word(input_as_big_endian, int(len(input_str)/2))
 
         assert big_to_little_python == input_as_little_endian
-
     %}
     let (big_to_little) = test_to_big_endian(input_as_big_endian, input_str_len);
     %{
@@ -53,12 +52,15 @@ func test_swap_endianness_full_word{range_check_ptr, bitwise_ptr: BitwiseBuiltin
 }
 
 @view
-func test_swap_endianness_small_words{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(i: felt) -> () {
+func test_swap_endianness_small_words{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(i: felt) -> (
+    ) {
     helper_test_swap_endianness_small_words(8);
     return ();
 }
 
-func helper_test_swap_endianness_small_words{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(i: felt) -> () {
+func helper_test_swap_endianness_small_words{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    i: felt
+) -> () {
     if (i == 0) {
         return ();
     }
@@ -88,7 +90,6 @@ func helper_test_swap_endianness_small_words{range_check_ptr, bitwise_ptr: Bitwi
         big_to_little_python = byteswap_64bit_word(input_as_big_endian, int(len(input_str)/2))
 
         assert big_to_little_python == input_as_little_endian
-
     %}
     let (big_to_little) = test_to_big_endian(input_as_big_endian, input_str_len);
     %{

@@ -11,9 +11,7 @@ func Initializable_initialized() -> (initialized: felt) {
 }
 
 namespace Initializable {
-    func initialized{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
-        felt
-    ) {
+    func initialized{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (felt,) {
         return Initializable_initialized.read();
     }
 

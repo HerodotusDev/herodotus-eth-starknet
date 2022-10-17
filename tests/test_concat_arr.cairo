@@ -6,8 +6,8 @@ from lib.concat_arr import concat_arr
 
 @view
 func test_concat_arr{range_check_ptr}() -> () {
-    let (acc : felt*) = alloc();
-    let (arr : felt*) = alloc();
+    let (acc: felt*) = alloc();
+    let (arr: felt*) = alloc();
     %{
         segments.write_arg(ids.acc, [10, 30, 50])
         segments.write_arg(ids.arr, [70, 90, 110])

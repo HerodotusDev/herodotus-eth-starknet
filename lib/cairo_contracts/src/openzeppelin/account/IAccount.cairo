@@ -7,7 +7,6 @@ from openzeppelin.account.library import AccountCallArray
 
 @contract_interface
 namespace IAccount {
-
     func supportsInterface(interfaceId: felt) -> (success: felt) {
     }
 

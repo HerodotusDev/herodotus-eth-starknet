@@ -6,11 +6,10 @@ from lib.types import Address
 from starkware.cairo.common.alloc import alloc
 
 @view
-func test_address_words64_to_160bit{range_check_ptr}() -> (
-) {
+func test_address_words64_to_160bit{range_check_ptr}() -> () {
     alloc_locals;
 
-    let (ipt : felt*) = alloc();
+    let (ipt: felt*) = alloc();
     %{
         from utils.types import Data
 
@@ -18,7 +17,7 @@ func test_address_words64_to_160bit{range_check_ptr}() -> (
 
         arr = Data.from_hex(example_addr).to_ints().values
         assert len(arr) == 3
-        
+
         segments.write_arg(ids.ipt, [arr[0], arr[1], arr[2]])
     %}
 
@@ -45,7 +44,7 @@ func test_address_160bit_to_words64{range_check_ptr}() -> () {
         output = list([ids.res.word_1, ids.res.word_2, ids.res.word_3])
         expected_output = Data.from_hex(example_addr).to_ints().values
 
-        assert output == expected_output    
+        assert output == expected_output
     %}
     return ();
 }

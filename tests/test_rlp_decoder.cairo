@@ -26,7 +26,7 @@ func test_decode_parent_hash{range_check_ptr}() -> () {
     alloc_locals;
     local block_rlp_len_bytes;
     local block_rlp_len;
-    let (block_rlp : felt*) = alloc();
+    let (block_rlp: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -44,9 +44,7 @@ func test_decode_parent_hash{range_check_ptr}() -> () {
         segments.write_arg(ids.block_rlp, block_rlp_formatted.values)
     %}
     let (parent_hash) = helper_test_decode_parent_hash(
-        block_rlp_len_bytes,
-        block_rlp_len,
-        block_rlp
+        block_rlp_len_bytes, block_rlp_len, block_rlp
     );
     %{
         extracted = [ids.parent_hash.word_1, ids.parent_hash.word_2, ids.parent_hash.word_3, ids.parent_hash.word_4]
@@ -71,7 +69,7 @@ func test_decode_uncles_hash{range_check_ptr}() -> () {
     alloc_locals;
     local block_rlp_len_bytes;
     local block_rlp_len;
-    let (block_rlp : felt*) = alloc();
+    let (block_rlp: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -89,9 +87,7 @@ func test_decode_uncles_hash{range_check_ptr}() -> () {
         segments.write_arg(ids.block_rlp, block_rlp_formatted.values)
     %}
     let (uncles_hash) = helper_test_decode_uncles_hash(
-        block_rlp_len_bytes,
-        block_rlp_len,
-        block_rlp
+        block_rlp_len_bytes, block_rlp_len, block_rlp
     );
     %{
         extracted = [ids.uncles_hash.word_1, ids.uncles_hash.word_2, ids.uncles_hash.word_3, ids.uncles_hash.word_4]
@@ -116,7 +112,7 @@ func test_decode_beneficiary{range_check_ptr}() -> () {
     alloc_locals;
     local block_rlp_len_bytes;
     local block_rlp_len;
-    let (block_rlp : felt*) = alloc();
+    let (block_rlp: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -134,9 +130,7 @@ func test_decode_beneficiary{range_check_ptr}() -> () {
         segments.write_arg(ids.block_rlp, block_rlp_formatted.values)
     %}
     let (beneficiary) = helper_test_decode_beneficiary(
-        block_rlp_len_bytes,
-        block_rlp_len,
-        block_rlp
+        block_rlp_len_bytes, block_rlp_len, block_rlp
     );
     %{
         extracted = [ids.beneficiary.word_1, ids.beneficiary.word_2, ids.beneficiary.word_3]
@@ -161,7 +155,7 @@ func test_decode_state_root{range_check_ptr}() -> () {
     alloc_locals;
     local block_rlp_len_bytes;
     local block_rlp_len;
-    let (block_rlp : felt*) = alloc();
+    let (block_rlp: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -178,11 +172,7 @@ func test_decode_state_root{range_check_ptr}() -> () {
         ids.block_rlp_len = len(block_rlp_formatted.values)
         segments.write_arg(ids.block_rlp, block_rlp_formatted.values)
     %}
-    let (state_root) = helper_test_decode_state_root(
-        block_rlp_len_bytes,
-        block_rlp_len,
-        block_rlp
-    );
+    let (state_root) = helper_test_decode_state_root(block_rlp_len_bytes, block_rlp_len, block_rlp);
     %{
         extracted = [ids.state_root.word_1, ids.state_root.word_2, ids.state_root.word_3, ids.state_root.word_4]
         l = list(map(lambda x: str(hex(x)[2:]), extracted))
@@ -206,7 +196,7 @@ func test_decode_transactions_root{range_check_ptr}() -> () {
     alloc_locals;
     local block_rlp_len_bytes;
     local block_rlp_len;
-    let (block_rlp : felt*) = alloc();
+    let (block_rlp: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -224,9 +214,7 @@ func test_decode_transactions_root{range_check_ptr}() -> () {
         segments.write_arg(ids.block_rlp, block_rlp_formatted.values)
     %}
     let (transactions_root) = helper_test_decode_transactions_root(
-        block_rlp_len_bytes,
-        block_rlp_len,
-        block_rlp
+        block_rlp_len_bytes, block_rlp_len, block_rlp
     );
     %{
         extracted = [ids.transactions_root.word_1, ids.transactions_root.word_2, ids.transactions_root.word_3, ids.transactions_root.word_4]
@@ -251,7 +239,7 @@ func test_decode_receipts_root{range_check_ptr}() -> () {
     alloc_locals;
     local block_rlp_len_bytes;
     local block_rlp_len;
-    let (block_rlp : felt*) = alloc();
+    let (block_rlp: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -269,9 +257,7 @@ func test_decode_receipts_root{range_check_ptr}() -> () {
         segments.write_arg(ids.block_rlp, block_rlp_formatted.values)
     %}
     let (receipts_root) = helper_test_decode_receipts_root(
-        block_rlp_len_bytes,
-        block_rlp_len,
-        block_rlp
+        block_rlp_len_bytes, block_rlp_len, block_rlp
     );
     %{
         extracted = [ids.receipts_root.word_1, ids.receipts_root.word_2, ids.receipts_root.word_3, ids.receipts_root.word_4]
@@ -296,7 +282,7 @@ func test_decode_difficulty{range_check_ptr}() -> () {
     alloc_locals;
     local block_rlp_len_bytes;
     local block_rlp_len;
-    let (block_rlp : felt*) = alloc();
+    let (block_rlp: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -313,14 +299,8 @@ func test_decode_difficulty{range_check_ptr}() -> () {
         ids.block_rlp_len = len(block_rlp_formatted.values)
         segments.write_arg(ids.block_rlp, block_rlp_formatted.values)
     %}
-    let (difficulty) = helper_test_decode_difficulty(
-        block_rlp_len_bytes,
-        block_rlp_len,
-        block_rlp
-    );
-    %{
-        assert ids.difficulty == block["difficulty"]
-    %}
+    let (difficulty) = helper_test_decode_difficulty(block_rlp_len_bytes, block_rlp_len, block_rlp);
+    %{ assert ids.difficulty == block["difficulty"] %}
     return ();
 }
 
@@ -337,7 +317,7 @@ func test_decode_block_number{range_check_ptr}() -> () {
     alloc_locals;
     local block_rlp_len_bytes;
     local block_rlp_len;
-    let (block_rlp : felt*) = alloc();
+    let (block_rlp: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -355,13 +335,9 @@ func test_decode_block_number{range_check_ptr}() -> () {
         segments.write_arg(ids.block_rlp, block_rlp_formatted.values)
     %}
     let (block_number) = helper_test_decode_block_number(
-        block_rlp_len_bytes,
-        block_rlp_len,
-        block_rlp
+        block_rlp_len_bytes, block_rlp_len, block_rlp
     );
-    %{
-        assert ids.block_number == block["number"]
-    %}
+    %{ assert ids.block_number == block["number"] %}
     return ();
 }
 
@@ -378,7 +354,7 @@ func test_decode_gas_limit{range_check_ptr}() -> () {
     alloc_locals;
     local block_rlp_len_bytes;
     local block_rlp_len;
-    let (block_rlp : felt*) = alloc();
+    let (block_rlp: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -395,14 +371,8 @@ func test_decode_gas_limit{range_check_ptr}() -> () {
         ids.block_rlp_len = len(block_rlp_formatted.values)
         segments.write_arg(ids.block_rlp, block_rlp_formatted.values)
     %}
-    let (gas_limit) = helper_test_decode_gas_limit(
-        block_rlp_len_bytes,
-        block_rlp_len,
-        block_rlp
-    );
-    %{
-        assert ids.gas_limit == block["gasLimit"]
-    %}
+    let (gas_limit) = helper_test_decode_gas_limit(block_rlp_len_bytes, block_rlp_len, block_rlp);
+    %{ assert ids.gas_limit == block["gasLimit"] %}
     return ();
 }
 
@@ -419,7 +389,7 @@ func test_decode_gas_used{range_check_ptr}() -> () {
     alloc_locals;
     local block_rlp_len_bytes;
     local block_rlp_len;
-    let (block_rlp : felt*) = alloc();
+    let (block_rlp: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -436,14 +406,8 @@ func test_decode_gas_used{range_check_ptr}() -> () {
         ids.block_rlp_len = len(block_rlp_formatted.values)
         segments.write_arg(ids.block_rlp, block_rlp_formatted.values)
     %}
-    let (gas_used) = helper_test_decode_gas_used(
-        block_rlp_len_bytes,
-        block_rlp_len,
-        block_rlp
-    );
-    %{
-        assert ids.gas_used == block["gasUsed"]
-    %}
+    let (gas_used) = helper_test_decode_gas_used(block_rlp_len_bytes, block_rlp_len, block_rlp);
+    %{ assert ids.gas_used == block["gasUsed"] %}
     return ();
 }
 
@@ -460,7 +424,7 @@ func test_decode_timestamp{range_check_ptr}() -> () {
     alloc_locals;
     local block_rlp_len_bytes;
     local block_rlp_len;
-    let (block_rlp : felt*) = alloc();
+    let (block_rlp: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -477,14 +441,8 @@ func test_decode_timestamp{range_check_ptr}() -> () {
         ids.block_rlp_len = len(block_rlp_formatted.values)
         segments.write_arg(ids.block_rlp, block_rlp_formatted.values)
     %}
-    let (timestamp) = helper_test_decode_timestamp(
-        block_rlp_len_bytes,
-        block_rlp_len,
-        block_rlp
-    );
-    %{
-        assert ids.timestamp == block["timestamp"]
-    %}
+    let (timestamp) = helper_test_decode_timestamp(block_rlp_len_bytes, block_rlp_len, block_rlp);
+    %{ assert ids.timestamp == block["timestamp"] %}
     return ();
 }
 
@@ -501,7 +459,7 @@ func test_decode_base_fee{range_check_ptr}() -> () {
     alloc_locals;
     local block_rlp_len_bytes;
     local block_rlp_len;
-    let (block_rlp : felt*) = alloc();
+    let (block_rlp: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -518,14 +476,8 @@ func test_decode_base_fee{range_check_ptr}() -> () {
         ids.block_rlp_len = len(block_rlp_formatted.values)
         segments.write_arg(ids.block_rlp, block_rlp_formatted.values)
     %}
-    let (base_fee) = helper_test_decode_base_fee(
-        block_rlp_len_bytes,
-        block_rlp_len,
-        block_rlp
-    );
-    %{
-        assert ids.base_fee == block["baseFeePerGas"]
-    %}
+    let (base_fee) = helper_test_decode_base_fee(block_rlp_len_bytes, block_rlp_len, block_rlp);
+    %{ assert ids.base_fee == block["baseFeePerGas"] %}
     return ();
 }
 

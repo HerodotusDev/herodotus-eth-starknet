@@ -20,7 +20,7 @@ func test_is_rlp_list_valid_input{range_check_ptr}() -> () {
     alloc_locals;
     local rlp_len_bytes;
     local rlp_len;
-    let (rlp : felt*) = alloc();
+    let (rlp: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -67,7 +67,7 @@ func test_is_rlp_list_invalid_input{range_check_ptr}() -> () {
 func test_get_element{range_check_ptr}() -> () {
     alloc_locals;
     local block_rlp_len;
-    let (values : felt*) = alloc();
+    let (values: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -104,7 +104,7 @@ func test_to_list{range_check_ptr}() -> () {
     alloc_locals;
 
     local block_rlp_len;
-    let (values : felt*) = alloc();
+    let (values: felt*) = alloc();
 
     %{
         from mocks.blocks import mocked_blocks
@@ -118,7 +118,9 @@ func test_to_list{range_check_ptr}() -> () {
         ids.block_rlp_len = block_rlp.to_ints().length
         segments.write_arg(ids.values, block_rlp.to_ints().values)
     %}
-    let (data_positions_len, data_positions, lengths_len, lengths) = helper_test_to_list(block_rlp_len, block_rlp_len, values);
+    let (data_positions_len, data_positions, lengths_len, lengths) = helper_test_to_list(
+        block_rlp_len, block_rlp_len, values
+    );
     %{
         from utils.rlp import to_list
         from utils.types import Data
@@ -183,14 +185,14 @@ func test_extract_list_values{range_check_ptr}() -> () {
     alloc_locals;
     local rlp_len_bytes;
     local rlp_len;
-    let (rlp : felt*) = alloc();
+    let (rlp: felt*) = alloc();
 
     local rlp_items_first_bytes_len;
-    let (rlp_items_first_bytes : felt*) = alloc();
+    let (rlp_items_first_bytes: felt*) = alloc();
     local rlp_items_data_positions_len;
-    let (rlp_items_data_positions : felt*) = alloc();
+    let (rlp_items_data_positions: felt*) = alloc();
     local rlp_items_lenghts_len;
-    let (rlp_items_lenghts : felt*) = alloc();
+    let (rlp_items_lenghts: felt*) = alloc();
     %{
         from mocks.blocks import mocked_blocks
         from utils.block_header import build_block_header
@@ -206,7 +208,9 @@ func test_extract_list_values{range_check_ptr}() -> () {
         ids.rlp_len = len(block_rlp.to_ints().values)
         segments.write_arg(ids.rlp, block_rlp.to_ints().values)
     %}
-    let (data_positions_len, data_positions, lengths_len, lengths) = helper_test_to_list(rlp_len_bytes, rlp_len, rlp);
+    let (data_positions_len, data_positions, lengths_len, lengths) = helper_test_to_list(
+        rlp_len_bytes, rlp_len, rlp
+    );
     %{
         block = mocked_blocks[0]
         block_header = build_block_header(block)
@@ -230,14 +234,15 @@ func test_extract_list_values{range_check_ptr}() -> () {
         ids.rlp_items_lenghts_len = len(expected_lengths)
         segments.write_arg(ids.rlp_items_lenghts, expected_lengths)
     %}
-    let (flattened_list_elements_len,
+    let (
+        flattened_list_elements_len,
         flattened_list_elements,
         flattened_list_sizes_words_len,
         flattened_list_sizes_words,
         flattened_list_sizes_bytes_len,
-        flattened_list_sizes_bytes
+        flattened_list_sizes_bytes,
     ) = helper_test_extract_list_values(
-        rlp_len_bytes, 
+        rlp_len_bytes,
         rlp_len,
         rlp,
         rlp_items_first_bytes_len,
@@ -245,13 +250,13 @@ func test_extract_list_values{range_check_ptr}() -> () {
         rlp_items_data_positions_len,
         rlp_items_data_positions,
         rlp_items_lenghts_len,
-        rlp_items_lenghts
+        rlp_items_lenghts,
     );
     %{
         block_rlp = Data.from_bytes(block_header.raw_rlp())
         rlp_items = to_list(block_rlp.to_ints())
         rlp_values = extract_list_values(block_rlp.to_ints(), rlp_items)
-        
+
         output_list_elements_flat = memory.get_range(ids.flattened_list_elements, ids.flattened_list_elements_len)
         output_list_elements_sizes_words = memory.get_range(ids.flattened_list_sizes_words, ids.flattened_list_sizes_words_len)
         output_list_elements_sizes_bytes = memory.get_range(ids.flattened_list_sizes_bytes, ids.flattened_list_sizes_bytes_len)
@@ -268,20 +273,19 @@ func test_extract_list_values{range_check_ptr}() -> () {
     return ();
 }
 
-
 @view
 func test_extract_list_from_account_rlp_entry{range_check_ptr}() -> () {
     alloc_locals;
     local rlp_len_bytes;
     local rlp_len;
-    let (rlp : felt*) = alloc();
+    let (rlp: felt*) = alloc();
 
     local rlp_items_first_bytes_len;
-    let (rlp_items_first_bytes : felt*) = alloc();
+    let (rlp_items_first_bytes: felt*) = alloc();
     local rlp_items_data_positions_len;
-    let (rlp_items_data_positions : felt*) = alloc();
+    let (rlp_items_data_positions: felt*) = alloc();
     local rlp_items_lenghts_len;
-    let (rlp_items_lenghts : felt*) = alloc();
+    let (rlp_items_lenghts: felt*) = alloc();
     %{
         from utils.types import Data
         from utils.rlp import to_list, IntsSequence, extract_list_values
@@ -294,7 +298,9 @@ func test_extract_list_from_account_rlp_entry{range_check_ptr}() -> () {
         ids.rlp_len = len(input.to_ints().values)
         segments.write_arg(ids.rlp, input.to_ints().values)
     %}
-    let (data_positions_len, data_positions, lengths_len, lengths) = helper_test_to_list(rlp_len_bytes, rlp_len, rlp);
+    let (data_positions_len, data_positions, lengths_len, lengths) = helper_test_to_list(
+        rlp_len_bytes, rlp_len, rlp
+    );
     %{
         expected = to_list(input.to_ints())
         expected_data_positions = list(map(lambda item: item.dataPosition, expected))
@@ -315,14 +321,15 @@ func test_extract_list_from_account_rlp_entry{range_check_ptr}() -> () {
         ids.rlp_items_lenghts_len = len(expected_lengths)
         segments.write_arg(ids.rlp_items_lenghts, expected_lengths)
     %}
-    let (flattened_list_elements_len,
+    let (
+        flattened_list_elements_len,
         flattened_list_elements,
         flattened_list_sizes_words_len,
         flattened_list_sizes_words,
         flattened_list_sizes_bytes_len,
-        flattened_list_sizes_bytes
+        flattened_list_sizes_bytes,
     ) = helper_test_extract_list_values(
-        rlp_len_bytes, 
+        rlp_len_bytes,
         rlp_len,
         rlp,
         rlp_items_first_bytes_len,
@@ -330,12 +337,12 @@ func test_extract_list_from_account_rlp_entry{range_check_ptr}() -> () {
         rlp_items_data_positions_len,
         rlp_items_data_positions,
         rlp_items_lenghts_len,
-        rlp_items_lenghts
+        rlp_items_lenghts,
     );
     %{
         rlp_items = to_list(input.to_ints())
         rlp_values = extract_list_values(input.to_ints(), rlp_items)
-        
+
         output_list_elements_flat = memory.get_range(ids.flattened_list_elements, ids.flattened_list_elements_len)
         output_list_elements_sizes_words = memory.get_range(ids.flattened_list_sizes_words, ids.flattened_list_sizes_words_len)
         output_list_elements_sizes_bytes = memory.get_range(ids.flattened_list_sizes_bytes, ids.flattened_list_sizes_bytes_len)
@@ -492,7 +499,7 @@ func test_extract_words{range_check_ptr}() -> () {
     alloc_locals;
     local rlp_len_bytes;
     local rlp_len;
-    let (rlp : felt*) = alloc();
+    let (rlp: felt*) = alloc();
 
     local start_pos;
     local size;
@@ -510,7 +517,9 @@ func test_extract_words{range_check_ptr}() -> () {
         ids.rlp_len = len(block_rlp.to_ints().values)
         segments.write_arg(ids.rlp, block_rlp.to_ints().values)
     %}
-    let (data_positions_len, data_positions, lengths_len, lengths) = helper_test_to_list(rlp_len_bytes, rlp_len, rlp);
+    let (data_positions_len, data_positions, lengths_len, lengths) = helper_test_to_list(
+        rlp_len_bytes, rlp_len, rlp
+    );
     %{
         expected = to_list(block_rlp.to_ints())
         expected_data_positions = list(map(lambda item: item.dataPosition, expected))
@@ -542,7 +551,7 @@ func test_extract_element{range_check_ptr}() -> () {
     alloc_locals;
     local rlp_len_bytes;
     local rlp_len;
-    let (rlp : felt*) = alloc();
+    let (rlp: felt*) = alloc();
     %{
         from utils.types import Data
         input = Data.from_hex('0x2A').to_ints()
@@ -552,9 +561,7 @@ func test_extract_element{range_check_ptr}() -> () {
         segments.write_arg(ids.rlp, input.values)
     %}
     let (res_len_bytes, res_len, res) = test_extractElement(0, rlp_len_bytes, rlp_len, rlp);
-    %{
-        assert memory.get_range(ids.res, ids.res_len) == [42]
-    %}
+    %{ assert memory.get_range(ids.res, ids.res_len) == [42] %}
     return ();
 }
 
@@ -603,7 +610,7 @@ func test_extractElement{range_check_ptr}(
 //         from utils.types import Data
 //         from utils.helpers import random_bytes
 
-//         input = Data.from_bytes(random_bytes(ids.length))
+// input = Data.from_bytes(random_bytes(ids.length))
 //         ids.rlp_len_bytes = input.to_ints().length
 //         segments.write_arg(ids.rlp, input.to_ints().values)
 //         ids.rlp_len = len(input.to_ints().values)

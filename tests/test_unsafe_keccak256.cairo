@@ -14,7 +14,7 @@ func test_against_web3_unsafe{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -
     alloc_locals;
     local keccak_input_length;
     local input_len;
-    let (input : felt*) = alloc();
+    let (input: felt*) = alloc();
     %{
         from utils.helpers import (concat_arr, bytes_to_int)
         from utils.types import Data
@@ -93,7 +93,7 @@ func test_hash_header_unsafe{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() ->
     alloc_locals;
     local keccak_input_length;
     local input_len;
-    let (input : felt*) = alloc();
+    let (input: felt*) = alloc();
     %{
         from utils.types import Data
         from web3 import Web3
@@ -123,8 +123,8 @@ func test_against_safe_implementation{range_check_ptr, bitwise_ptr: BitwiseBuilt
     alloc_locals;
     local keccak_input_length;
     local input_len;
-    let (input_le : felt*) = alloc();
-    let (input_be : felt*) = alloc();
+    let (input_le: felt*) = alloc();
+    let (input_be: felt*) = alloc();
     %{
         from utils.helpers import (concat_arr, bytes_to_int, Encoding)
         from utils.types import Data

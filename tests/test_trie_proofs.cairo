@@ -12,11 +12,11 @@ func test_count_shared_prefix_len{range_check_ptr}() -> () {
     alloc_locals;
     local path_offset;
     local path_values_len;
-    let (path_values : felt*) = alloc();
+    let (path_values: felt*) = alloc();
 
     local path_size_bytes;
     local element_rlp_values_len;
-    let (element_rlp_values : felt*) = alloc();
+    let (element_rlp_values: felt*) = alloc();
     local element_rlp_size_bytes;
 
     local node_path_item_firstByte;
@@ -74,12 +74,9 @@ func test_count_shared_prefix_len{range_check_ptr}() -> () {
         node_path_item_data_pos,
         node_path_item_length,
     );
-    %{
-        assert ids.res == expected_shared_prefix
-    %}
+    %{ assert ids.res == expected_shared_prefix %}
     return ();
 }
-
 
 func helper_test_count_shared_prefix_len{range_check_ptr}(
     path_offset: felt,
@@ -112,7 +109,7 @@ func helper_test_count_shared_prefix_len{range_check_ptr}(
 func test_get_next_element_hash{range_check_ptr}() -> () {
     alloc_locals;
     local rlp_input_values_len;
-    let (rlp_input_values : felt*) = alloc();
+    let (rlp_input_values: felt*) = alloc();
     local rlp_input_values_size_bytes;
 
     local rlp_node_first_byte;
@@ -154,7 +151,7 @@ func test_get_next_element_hash{range_check_ptr}() -> () {
         rlp_input_values_size_bytes,
         rlp_node_first_byte,
         rlp_node_data_pos,
-        rlp_node_data_length
+        rlp_node_data_length,
     );
     %{
         output = memory.get_range(ids.res.element, 4)
@@ -249,13 +246,10 @@ func test_verify_valid_account_proof{range_check_ptr, bitwise_ptr: BitwiseBuilti
         root_hash_size_bytes,
         root_hash_len,
         root_hash,
-
         proof_sizes_bytes_len,
         proof_sizes_bytes,
-
         proof_sizes_words_len,
         proof_sizes_words,
-
         proofs_concat_len,
         proofs_concat,
     );
@@ -452,7 +446,8 @@ func test_verify_valid_transaction_proof{range_check_ptr, bitwise_ptr: BitwiseBu
 }
 
 @view
-func test_verify_valid_storage_proof_non_zero_value{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
+func test_verify_valid_storage_proof_non_zero_value{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    ) -> () {
     alloc_locals;
     local path_size_bytes;
     local path_len;

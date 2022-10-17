@@ -18,7 +18,7 @@ func helper_test_extract_nibble{range_check_ptr}(index: felt) -> () {
     }
     local word;
     local word_len_bytes;
-    let (expected_res : felt*) = alloc();
+    let (expected_res: felt*) = alloc();
     local max_index;
     %{
         from utils.types import Data
@@ -34,7 +34,9 @@ func helper_test_extract_nibble{range_check_ptr}(index: felt) -> () {
     return helper_test_extract_nibble(index - 1);
 }
 
-func helper_2_test_extract_nibble{range_check_ptr}(word: felt, word_len_bytes: felt, expected_res : felt*, index: felt) -> () {
+func helper_2_test_extract_nibble{range_check_ptr}(
+    word: felt, word_len_bytes: felt, expected_res: felt*, index: felt
+) -> () {
     let (res) = extract_nibble(word, word_len_bytes, index);
     assert res = expected_res[index];
     if (index == 0) {
@@ -48,7 +50,7 @@ func test_to_words128{range_check_ptr}() -> () {
     alloc_locals;
     local words64_len_bytes;
     local words64_len;
-    let (words64 : felt*) = alloc();
+    let (words64: felt*) = alloc();
     %{
         from utils.types import Data
         from utils.block_header import build_block_header
@@ -65,11 +67,7 @@ func test_to_words128{range_check_ptr}() -> () {
         ids.words64_len = len(words.values)
         ids.words64_len_bytes = len(block_header_input.to_bytes())
     %}
-    let (res_len, res) = helper_test_to_words128(
-        words64_len_bytes,
-        words64_len,
-        words64
-    );
+    let (res_len, res) = helper_test_to_words128(words64_len_bytes, words64_len, words64);
     %{
         output = memory.get_range(ids.res, ids.res_len)
 
@@ -107,9 +105,9 @@ func test_extract_nibble_from_ints_sequence{range_check_ptr}() -> () {
 func helper_test_extract_nibble_from_ints_sequence{range_check_ptr}(index: felt) -> () {
     alloc_locals;
     local words_len;
-    let (words : felt*) = alloc();
+    let (words: felt*) = alloc();
     local words_len_bytes;
-    let (expected_res : felt*) = alloc();
+    let (expected_res: felt*) = alloc();
     local max_index;
     if (index == 0) {
         return ();
@@ -122,23 +120,27 @@ func helper_test_extract_nibble_from_ints_sequence{range_check_ptr}(index: felt)
         segments.write_arg(ids.words, words.values)
         ids.words_len = len(words.values)
         ids.words_len_bytes = len(input.to_bytes())
-        
+
         segments.write_arg(ids.expected_res, input.to_nibbles())
         ids.max_index = (len(input.to_bytes()) * 2) - 1
     %}
-    helper_2_test_extract_nibble_from_ints_sequence(words_len, words, words_len_bytes, expected_res, max_index);
+    helper_2_test_extract_nibble_from_ints_sequence(
+        words_len, words, words_len_bytes, expected_res, max_index
+    );
     return helper_test_extract_nibble_from_ints_sequence(index - 1);
 }
 
 func helper_2_test_extract_nibble_from_ints_sequence{range_check_ptr}(
     words_len: felt, words: felt*, words_len_bytes: felt, expected_res: felt*, index: felt
-)-> () {
+) -> () {
     let (res) = test_extract_nibble_from_words(words_len, words, words_len_bytes, index);
     assert res = expected_res[index];
     if (index == 0) {
         return ();
     }
-    return helper_2_test_extract_nibble_from_ints_sequence(words_len, words, words_len_bytes, expected_res, index - 1);
+    return helper_2_test_extract_nibble_from_ints_sequence(
+        words_len, words, words_len_bytes, expected_res, index - 1
+    );
 }
 
 func test_extract_nibble_from_words{range_check_ptr}(

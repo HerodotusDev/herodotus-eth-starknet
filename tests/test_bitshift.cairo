@@ -18,9 +18,7 @@ func test_bitshift_right{range_check_ptr}() -> () {
         ids.bits_shifted = randint(0, 64)
     %}
     let (shifted) = bitshift_right(input, bits_shifted);
-    %{
-        assert ids.input >> ids.bits_shifted == ids.shifted
-    %}
+    %{ assert ids.input >> ids.bits_shifted == ids.shifted %}
     return ();
 }
 
@@ -33,7 +31,7 @@ func test_bitshift_left{range_check_ptr}() -> () {
         from random import randint
         from utils.helpers import random_bytes, bytes_to_int
         bytes_to_int_big = lambda word: bytes_to_int(word)
-        
+
         input_bytes = random_bytes(8)
         ids.input = bytes_to_int_big(input_bytes)
         ids.bits_shifted = randint(0, 64)

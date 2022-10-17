@@ -211,15 +211,21 @@ func test_receive_from_l1_with_optimistic_relay_slashing{syscall_ptr: felt*, ran
         ).contract_address
     %}
 
-    let (contract_balance_before_stake) = IERC20.balanceOf(contract_address=erc20, account=l1_messages_proxy);
+    let (contract_balance_before_stake) = IERC20.balanceOf(
+        contract_address=erc20, account=l1_messages_proxy
+    );
     assert contract_balance_before_stake = Uint256(0, 0);
 
-    let (get_relayer_balance) = IERC20.balanceOf(contract_address=erc20, account=relayer_account_contract_address);
+    let (get_relayer_balance) = IERC20.balanceOf(
+        contract_address=erc20, account=relayer_account_contract_address
+    );
     assert get_relayer_balance = Uint256(1000, 0);
 
-    IERC20.approve(contract_address=erc20, spender=l1_messages_proxy, amount=Uint256(required_stake_amount, 0));
+    IERC20.approve(
+        contract_address=erc20, spender=l1_messages_proxy, amount=Uint256(required_stake_amount, 0)
+    );
 
     // TODO: find a way to sign transactions and extract public key from an account.
-    
+
     return ();
 }
