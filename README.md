@@ -1,10 +1,10 @@
 # Starknet-based State Verifier
 
-Herothodus will allow anyone to trustlessly prove any past or current headers, state, and storage values of L1 contracts to other L2 contracts.
+Herodotus will allow anyone to trustlessly prove any past or current headers, state, and storage values of L1 contracts to other L2 contracts.
 
 ## Architecure
 
-Herothodus is built out of the following components:
+Herodotus is built out of the following components:
 
 - L1 messaging contracts
 - L2 contract receiving L1 messages
@@ -18,18 +18,18 @@ _Storage Verifier Flow diagram_
 
 In order to run the tests, please make sure to have a python 3.7 virtual environment.
 
-## Herothodus API
+## Herodotus API
 
-Herothodus has built an API which allows projects to take advantage of Herothodus in a much simpler manner.
+Herodotus has built an API which allows projects to take advantage of Herodotus in a much simpler manner.
 
-Please note: **Herothodus is currently not ready for most production applications**!
+Please note: **Herodoodus is currently not ready for most production applications**!
 
-This is because the block step limit on Starknet is too low and large requests may fail if they require too many steps. We are in contact with Starkware and are awaiting for them to increase the step limit in the near future, at which time we will complete e2e testing and officially launch Herothodus.
+This is because the block step limit on Starknet is too low and large requests may fail if they require too many steps. We are in contact with Starkware and are awaiting for them to increase the step limit in the near future, at which time we will complete e2e testing and officially launch Herodotus.
 
-Check out our [API Docs](https://docs.herothodus.dev) to see all of our currently supported endpoints!
+Check out our [API Docs](https://docs.herodotus.dev) to see all of our currently supported endpoints!
 
-If you are interested in building with the Herothodus API, we can give you API access for testing purposes prior to the official launch. Please send any inquiries to: <dev@herothodus.dev>
+If you are interested in building with the Herodotus API, we can give you API access for testing purposes prior to the official launch. Please send any inquiries to: <dev@herodotus.dev>
 
 ## Contribute
 
-There are countless usecases for the storage verifier and we are excited to hear what the community wants to build with it! Please reach out to <dev@herothodus.dev> for any partnership, sponsorship, or other matters.
+There are countless usecases for the storage verifier and we are excited to hear what the community wants to build with it! Please reach out to <dev@herodotus.dev> for any partnership, sponsorship, or other matters.
