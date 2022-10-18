@@ -368,8 +368,6 @@ func test_receive_from_l1_with_optimistic_relay_slashing{syscall_ptr: felt*, ran
     local parent_hash_3;
     local reward_account = 888;
     %{
-        from starkware.starknet.public.abi import get_selector_from_name
-
         message = bytearray.fromhex(mocked_blocks[0]["parentHash"].hex()[2:])
         chunked_message = chunk_bytes_input(message)
         formatted_words_correct = list(map(bytes_to_int_little, chunked_message))
