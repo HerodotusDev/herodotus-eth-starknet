@@ -26,7 +26,7 @@ func test_covert_1{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
     alloc_locals;
     let (array: felt*) = alloc();
     %{ segments.write_arg(ids.array, [1]) %}
-    
+
     local input: IntsSequence = IntsSequence(array, 1, 1);
     let (local out: Uint256) = ints_to_uint256(ints=input);
 
