@@ -2,7 +2,7 @@
 
 Herodotus will allow anyone to trustlessly prove any past or current headers, state, and storage values of L1 contracts to other L2 contracts.
 
-## Architecure
+## Architecture
 
 Herodotus is built out of the following components:
 
@@ -32,4 +32,4 @@ If you are interested in building with the Herodotus API, we can give you API ac
 
 ## Contribute
 
-There are countless usecases for the storage verifier and we are excited to hear what the community wants to build with it! Please reach out to <dev@herodotus.dev> for any partnership, sponsorship, or other matters.
+There are countless use cases for the storage verifier and we are excited to hear what the community wants to build with it! Please reach out to <dev@herodotus.dev> for any partnership, sponsorship, or other matters.
