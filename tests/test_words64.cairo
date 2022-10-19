@@ -65,13 +65,11 @@ func test_to_words128{range_check_ptr}() -> () {
         words = block_header_input.to_ints()
         segments.write_arg(ids.words64, words.values)
         ids.words64_len = len(words.values)
-        ids.words64_len_bytes = len(block_header_input.to_bytes())
+        ids.words64_len_bytes = words.length #len(block_header_input.to_bytes())
     %}
     let (res_len, res) = helper_test_to_words128(words64_len_bytes, words64_len, words64);
     %{
         output = memory.get_range(ids.res, ids.res_len)
-
-        # TODO: investigate the assertion failure when using range(0, len(output))
         for i in range(0, len(output) - 1):
             output_word_bin = bin(output[i])[2:]
             if len(output_word_bin) < 128:
@@ -82,6 +80,7 @@ func test_to_words128{range_check_ptr}() -> () {
             else:
                 input128_word_bin = bin(block_header_input.to_ints().values[i * 2])[2:].zfill(64) + bin(block_header_input.to_ints().values[i * 2 + 1])[2:].zfill(64)
             #print("expected", input128_word_bin.zfill(128), "; got", output_word_bin.zfill(128))
+            # TODO: byte shift
             assert output_word_bin.zfill(128) == input128_word_bin.zfill(128), f"Failed at iteration: {i}"
     %}
     return ();

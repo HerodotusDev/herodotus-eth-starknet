@@ -12,7 +12,8 @@ from lib.ints_to_uint256 import ints_to_uint256
 func test_covert_0{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
     alloc_locals;
     let (array: felt*) = alloc();
-    assert [array] = 0;
+    %{ segments.write_arg(ids.array, [0]) %}
+
     local input: IntsSequence = IntsSequence(array, 1, 1);
     let (local out: Uint256) = ints_to_uint256(ints=input);
 
@@ -24,7 +25,8 @@ func test_covert_0{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
 func test_covert_1{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
     alloc_locals;
     let (array: felt*) = alloc();
-    assert [array] = 1;
+    %{ segments.write_arg(ids.array, [1]) %}
+    
     local input: IntsSequence = IntsSequence(array, 1, 1);
     let (local out: Uint256) = ints_to_uint256(ints=input);
 
@@ -39,17 +41,14 @@ func test_covert_random{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(rand_int:
         assume(ids.rand_int >= 0)
         assume(ids.rand_int < 2 ** 256 - 1)
     %}
-
     let (array: felt*) = alloc();
-    assert [array] = rand_int;
+    %{ segments.write_arg(ids.array, [ids.rand_int]) %}
     local input: IntsSequence = IntsSequence(array, 1, 1);
     let (local out: Uint256) = ints_to_uint256(ints=input);
-
     assert out = Uint256(rand_int, 0);
     return ();
 }
 
-// TODO: fix (currently no exception is thrown)
 @view
 func test_covert_out_of_bound{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
     alloc_locals;
@@ -58,9 +57,10 @@ func test_covert_out_of_bound{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -
     %{
         from random import randint
         ids.num = randint(2**256, 2**512)
+        segments.write_arg(ids.array, [ids.num])
     %}
-    assert [array] = num;
     local input: IntsSequence = IntsSequence(array, 1, 1);
+    %{ expect_revert() %}
     let (local out: Uint256) = ints_to_uint256(ints=input);
     assert out = Uint256(num, 0);
     return ();

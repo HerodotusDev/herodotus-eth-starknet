@@ -70,7 +70,7 @@ async def test_to_words128(factory):
         else:
             input128_word_bin = bin(block_header_input.to_ints().values[i * 2])[2:].zfill(64) + bin(block_header_input.to_ints().values[i * 2 + 1])[2:].zfill(64)
         # TODO byte shift
-        # assert output_word_bin.zfill(128) == input128_word_bin.zfill(128), f"Failed at iteration: {i}"
+        assert output_word_bin.zfill(128) == input128_word_bin.zfill(128), f"Failed at iteration: {i}"
 
 @pytest.mark.asyncio
 async def test_extract_nibble_from_ints_sequence(factory):

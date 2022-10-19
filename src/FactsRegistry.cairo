@@ -332,7 +332,6 @@ func get_storage{
         0,
         0,
     );
-
     let (local result: IntsSequence) = verify_proof(
         path, storage_root, proof, proof_sizes_bytes_len
     );
