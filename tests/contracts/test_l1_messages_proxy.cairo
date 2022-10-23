@@ -34,6 +34,9 @@ namespace L1MessagesProxy {
     func stake(relayer_public_key: felt) {
     }
 
+    func unstake() {
+    }
+
     func relay_optimistic(
         parent_hash_word_1: felt,
         parent_hash_word_2: felt,
@@ -57,6 +60,9 @@ namespace L1MessagesProxy {
     }
 
     func increase_required_stake_amount(new_required_stake_amount: felt) {
+    }
+
+    func get_relayer_required_stake_amount() -> (res: felt) {
     }
 }
 
@@ -122,10 +128,10 @@ func __setup__{syscall_ptr: felt*, range_check_ptr}() {
         ids.relayer_pub_key = pub_key
         context.relayer_pub_key = pub_key
 
-        context.l1_messages_proxy_address = deploy_contract("src/L1MessagesProxy_L1Handler_Callable.cairo").contract_address
+        context.l1_messages_proxy_address = deploy_contract("src/L1MessagesProxy.cairo").contract_address
         ids.l1_messages_proxy_address = context.l1_messages_proxy_address
 
-        context.l1_headers_store_addr = deploy_contract("src/L1HeadersStore_no_builtins.cairo", [ids.l1_messages_proxy_address]).contract_address
+        context.l1_headers_store_addr = deploy_contract("src/L1HeadersStore.cairo", [ids.l1_messages_proxy_address]).contract_address
         ids.l1_headers_store_addr = context.l1_headers_store_addr
 
         context.erc20 = deploy_contract(
@@ -372,37 +378,21 @@ func test_receive_from_l1_with_optimistic_relay_slashing{syscall_ptr: felt*, ran
         chunked_message = chunk_bytes_input(message)
         formatted_words_correct = list(map(bytes_to_int_little, chunked_message))
 
-        # Should be possible once protostar publishes this cheatcode in a version
-        # https://github.com/software-mansion/protostar/pull/940/files
-        #send_message_to_l2(
-        #    from_address=context.l1_messages_sender,
-        #    to_address=context.l1_messages_proxy,
-        #    fn_name='receive_from_l1',
-        #    payload=[formatted_words_correct + [mocked_blocks[0]["number"]] + [ids.reward_account]]
-        #)
-        ids.parent_hash_0 = formatted_words_correct[0]
-        ids.parent_hash_1 = formatted_words_correct[1]
-        ids.parent_hash_2 = formatted_words_correct[2]
-        ids.parent_hash_3 = formatted_words_correct[3]
+        send_message_to_l2(
+            fn_name='receive_from_l1',
+            from_address=context.l1_messages_sender,
+            to_address=context.l1_messages_proxy_address,
+            #payload=[formatted_words_correct[0], formatted_words_correct[1], formatted_words_correct[2], formatted_words_correct[3], ids.block_number, ids.reward_account],
+            payload={
+                "parent_hash_word_1": formatted_words_correct[0],
+                "parent_hash_word_2": formatted_words_correct[1],
+                "parent_hash_word_3": formatted_words_correct[2],
+                "parent_hash_word_4": formatted_words_correct[3],
+                "block_number": ids.block_number,
+                "caller_origin_addr": ids.reward_account,
+            }
+        )
     %}
-    local parent_hash: Keccak256Hash = Keccak256Hash(
-        word_1=parent_hash_0,
-        word_2=parent_hash_1,
-        word_3=parent_hash_2,
-        word_4=parent_hash_3
-        );
-    %{ stop_prank_callable = start_prank(ids.l1_messages_sender, target_contract_address=context.l1_messages_proxy_address) %}
-    L1MessagesProxy.receive_from_l1(
-        contract_address=l1_messages_proxy,
-        from_address=l1_messages_sender,
-        parent_hash_word_1=parent_hash_0,
-        parent_hash_word_2=parent_hash_1,
-        parent_hash_word_3=parent_hash_2,
-        parent_hash_word_4=parent_hash_3,
-        block_number=block_number,
-        caller_origin_addr=reward_account,
-    );
-    %{ stop_prank_callable() %}
     let (hash) = L1HeadersStore.get_parent_hash(
         contract_address=l1_headers_store_addr, block_number=block_number
     );
@@ -426,15 +416,26 @@ func test_receive_from_l1_with_optimistic_relay_slashing{syscall_ptr: felt*, ran
     // 1000 is the starting balance (initial liquidity) of the relayer
     tempvar expected = 1000 - required_stake_amount;
     assert get_relayer_balance_after_slash_call = Uint256(expected, 0);
+    return ();
+}
 
-    // Owner increases the required amount
-    %{ stop_prank_callable = start_prank(context.owner, target_contract_address=context.l1_messages_proxy_address) %}
-    L1MessagesProxy.increase_required_stake_amount(
-        contract_address=l1_messages_proxy, new_required_stake_amount=required_stake_amount * 2
-    );
-    %{ stop_prank_callable() %}
+@external
+func test_unstake{syscall_ptr: felt*, range_check_ptr}() {
+    alloc_locals;
+    local l1_messages_proxy;
+    local erc20;
+    local l1_headers_store_addr;
+    local required_stake_amount = 100;
+    local relayer_public_key;
+    local l1_messages_sender;
+    %{
+        ids.l1_messages_proxy = context.l1_messages_proxy_address
+        ids.erc20 = context.erc20
+        ids.relayer_public_key = context.relayer_pub_key
+        ids.l1_headers_store_addr = context.l1_headers_store_addr
+        ids.l1_messages_sender = context.l1_messages_sender
+    %}
 
-    // Try staking again
     %{ stop_prank_callable = start_prank(ids.relayer_public_key, target_contract_address=context.erc20) %}
     IERC20.approve(
         contract_address=erc20,
@@ -448,6 +449,43 @@ func test_receive_from_l1_with_optimistic_relay_slashing{syscall_ptr: felt*, ran
         contract_address=l1_messages_proxy, relayer_public_key=relayer_public_key
     );
     %{ stop_prank_callable() %}
+    let (get_relayer_balance_after_stake_call) = IERC20.balanceOf(
+        contract_address=erc20, account=relayer_public_key
+    );
+    tempvar expected = 1000 - (required_stake_amount);
+    assert get_relayer_balance_after_stake_call = Uint256(expected, 0);
+
+    // Staking again should revert as the relayer is still staking
+    %{ stop_prank_callable = start_prank(ids.relayer_public_key, target_contract_address=context.l1_messages_proxy_address) %}
+    %{ expect_revert() %}
+    L1MessagesProxy.stake(
+        contract_address=l1_messages_proxy, relayer_public_key=relayer_public_key
+    );
+    %{ stop_prank_callable() %}
+
+    // Unstake
+    %{ stop_prank_callable = start_prank(ids.relayer_public_key, target_contract_address=context.l1_messages_proxy_address) %}
+    L1MessagesProxy.unstake(contract_address=l1_messages_proxy);
+    %{ stop_prank_callable() %}
+
+    // Owner increases the required amount
+    %{ stop_prank_callable = start_prank(context.owner, target_contract_address=context.l1_messages_proxy_address) %}
+    L1MessagesProxy.increase_required_stake_amount(
+        contract_address=l1_messages_proxy, new_required_stake_amount=required_stake_amount * 2
+    );
+    %{ stop_prank_callable() %}
+    let (new_staking_amount) = L1MessagesProxy.get_relayer_required_stake_amount(
+        contract_address=l1_messages_proxy
+    );
+    assert new_staking_amount = required_stake_amount * 2;
+
+    // Try staking again
+    %{ stop_prank_callable = start_prank(ids.relayer_public_key, target_contract_address=context.l1_messages_proxy_address) %}
+    L1MessagesProxy.stake(
+        contract_address=l1_messages_proxy, relayer_public_key=relayer_public_key
+    );
+    %{ stop_prank_callable() %}
+
     let (get_relayer_balance_after_stake_call) = IERC20.balanceOf(
         contract_address=erc20, account=relayer_public_key
     );
