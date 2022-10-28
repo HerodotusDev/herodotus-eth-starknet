@@ -22,7 +22,7 @@ In order to run the tests, please make sure to have a python 3.7 virtual environ
 
 Herodotus has built an API which allows projects to take advantage of Herodotus in a much simpler manner.
 
-Please note: **Herodoodus is currently not ready for most production applications**!
+Please note: **Herodotus is currently not ready for most production applications**!
 
 This is because the block step limit on Starknet is too low and large requests may fail if they require too many steps. We are in contact with Starkware and are awaiting for them to increase the step limit in the near future, at which time we will complete e2e testing and officially launch Herodotus.
 
