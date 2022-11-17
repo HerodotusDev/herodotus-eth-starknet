@@ -2,7 +2,7 @@
 
 Herodotus will allow anyone to trustlessly prove any past or current headers, state, and storage values of L1 contracts to other L2 contracts.
 
-## Architecure
+## Architecture
 
 Herodotus is built out of the following components:
 
@@ -26,13 +26,13 @@ Please note: **Herodotus is currently not ready for most production applications
 
 This is because the block step limit on Starknet is too low and large requests may fail if they require too many steps. We are in contact with Starkware and are awaiting for them to increase the step limit in the near future, at which time we will complete e2e testing and officially launch Herodotus.
 
-Check out our [API Docs](https://docs.Herodotus.dev) to see all of our currently supported endpoints!
+Check out our [API Docs](https://docs.herodotus.dev) to see all of our currently supported endpoints!
 
-If you are interested in building with the Herodotus API, we can give you API access for testing purposes prior to the official launch. Please send any inquiries to: <dev@Herodotus.dev>
+If you are interested in building with the Herodotus API, we can give you API access for testing purposes prior to the official launch. Please send any inquiries to: <dev@herodotus.dev>
 
 ## Contribute
 
-There are countless usecases for the storage verifier and we are excited to hear what the community wants to build with it! Please reach out to <dev@Herodotus.dev> for any partnership, sponsorship, or other matters.
+There are countless use cases for the storage verifier and we are excited to hear what the community wants to build with it! Please reach out to <dev@herodotus.dev> for any partnership, sponsorship, or other matters.
 
 ## Protostar: Getting Started
 
@@ -60,5 +60,5 @@ To install dependencies:
 To run the tests:
 
 ```bash
-    protostar test tests/ --cairo-path ./lib/cairo_contracts/src/ 
+ protostar test tests/ --cairo-path ./lib/cairo_contracts/src/ 
 ```
