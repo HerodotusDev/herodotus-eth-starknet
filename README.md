@@ -60,5 +60,5 @@ To install dependencies:
 To run the tests:
 
 ```bash
- protostar test tests/
+    protostar test tests/ --cairo-path ./lib/cairo_contracts/src/ 
 ```
