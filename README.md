@@ -33,3 +33,32 @@ If you are interested in building with the Herodotus API, we can give you API ac
 ## Contribute
 
 There are countless use cases for the storage verifier and we are excited to hear what the community wants to build with it! Please reach out to <dev@herodotus.dev> for any partnership, sponsorship, or other matters.
+
+## Protostar: Getting Started
+
+Install protostar (for Linux and Mac):
+
+```bash
+curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash
+```
+
+- Restart the terminal.
+- Run protostar -v to check Protostar and cairo-lang version.
+
+To install dependencies:
+
+```bash
+ protostar install
+```
+
+## Building and running tests
+
+```bash
+ protostar build
+```
+
+To run the tests:
+
+```bash
+ protostar test tests/ --cairo-path ./lib/cairo_contracts/src/ 
+```
