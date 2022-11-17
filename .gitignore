@@ -13,3 +13,5 @@ secrets.json
 .env
 
 node.json
+
+.protostar_cache
