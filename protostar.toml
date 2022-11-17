@@ -1,0 +1,16 @@
+[project]
+protostar-version = "0.7.0"
+lib-path = "lib"
+
+cairo_path = ["lib/cairo_contracts/src"]
+
+[contracts]
+Account = ["src/external/Account.cairo"]
+FactsRegistry = ["src/FactsRegistry.cairo"]
+L1HeadersStore = ["src/L1HeadersStore.cairo"]
+L1MessagesProxy = ["src/L1MessagesProxy.cairo"]
+TWAP = ["src/TWAP.cairo"]
+
+[test]
+disable-hint-validation = true
+
