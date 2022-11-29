@@ -73,6 +73,12 @@ func test_bitset{range_check_ptr}() -> () {
 }
 
 @view
+func setup_bitset_random{range_check_ptr}() -> () {
+    %{ given(random_bitset = strategy.felts()) %}
+    return ();
+}
+
+@view
 func test_bitset_random{range_check_ptr}(random_bitset: felt) -> () {
     if (is_in_range(random_bitset, 1, 2 ** 16 - 1) == 0) {
         %{ reject() %}

@@ -1,8 +1,8 @@
 [project]
-protostar-version = "0.7.0"
+protostar-version = "0.8.1"
 lib-path = "lib"
 
-cairo-path = ["lib/cairo_contracts/src"]
+cairo-path = ["lib/cairo_contracts/src", "lib/utils", "tests"]
 
 [contracts]
 Account = ["src/external/Account.cairo"]

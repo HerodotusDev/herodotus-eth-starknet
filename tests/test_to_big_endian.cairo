@@ -52,6 +52,12 @@ func test_swap_endianness_full_word{range_check_ptr, bitwise_ptr: BitwiseBuiltin
 }
 
 @view
+func setup_swap_endianness_small_words{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
+    %{ given(i = strategy.felts()) %}
+    return ();
+}
+
+@view
 func test_swap_endianness_small_words{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(i: felt) -> (
     ) {
     helper_test_swap_endianness_small_words(8);

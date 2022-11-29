@@ -35,6 +35,12 @@ func test_covert_1{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
 }
 
 @view
+func setup_covert_random{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
+    %{ given(rand_int = strategy.felts()) %}
+    return ();
+}
+
+@view
 func test_covert_random{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(rand_int: felt) -> () {
     alloc_locals;
     %{
