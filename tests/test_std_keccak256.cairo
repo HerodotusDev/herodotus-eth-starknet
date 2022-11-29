@@ -10,7 +10,6 @@ from starkware.cairo.common.cairo_keccak.keccak import keccak_as_words, finalize
 
 from lib.types import IntsSequence
 from lib.keccak_std_be import keccak256_auto_finalize
-from python_utils import setup_python_defs
 
 struct Keccak256Hash {
     word_1: felt,
@@ -25,7 +24,6 @@ func test_against_web3{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
     local keccak_input_length;
     local input_len;
     let (input: felt*) = alloc();
-    setup_python_defs();
     %{
         from utils.helpers import (concat_arr, bytes_to_int, Encoding)
         from utils.types import Data
@@ -81,8 +79,6 @@ func test_keccak256_std{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 @view
 func test_against_web3_multiple_inputs{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
     alloc_locals;
-    setup_python_defs();
-
     local keccak_input_length;
     local input_len;
     let (input: felt*) = alloc();
@@ -186,7 +182,6 @@ func test_against_web3_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> ()
     local keccak_input_length;
     local input_len;
     let (input: felt*) = alloc();
-    setup_python_defs();
     %{
         from utils.helpers import (concat_arr, bytes_to_int, Encoding)
         from utils.types import Data
@@ -243,7 +238,6 @@ func test_hash_header{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() -> () {
     local keccak_input_length;
     local input_len;
     let (input: felt*) = alloc();
-    setup_python_defs();
     %{
         from utils.helpers import (bytes_to_int, Encoding)
         from utils.types import Data

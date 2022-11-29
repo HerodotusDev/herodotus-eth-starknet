@@ -8,7 +8,6 @@ from starkware.cairo.common.alloc import alloc
 
 from lib.keccak import keccak256
 from lib.types import IntsSequence
-from python_utils import setup_python_defs
 from lib.comp_arr import arr_eq
 
 struct Keccak256Hash {

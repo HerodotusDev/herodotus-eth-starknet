@@ -72,15 +72,20 @@ func test_bitset{range_check_ptr}() -> () {
     return ();
 }
 
-@view
-func test_bitset_random{range_check_ptr}(random_bitset: felt) -> () {
-    if (is_in_range(random_bitset, 1, 2 ** 16 - 1) == 0) {
-        %{ reject() %}
-        return ();
-    }
+@external
+func setup_bitset_random() {
+    %{
+        given(
+            rand_bitset = strategy.integers(1, 2 ** 16 - 1)
+        )
+    %}
+    return ();
+}
 
-    let (sum: felt) = call_bitset_get_random_recursive(random_bitset, 15, 0);
-    assert sum = random_bitset;
+@view
+func test_bitset_random{range_check_ptr}(rand_bitset: felt) -> () {
+    let (sum: felt) = call_bitset_get_random_recursive(rand_bitset, 15, 0);
+    assert sum = rand_bitset;
     return ();
 }
 
