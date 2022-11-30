@@ -2,10 +2,10 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.math import assert_le, unsigned_div_rem
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.pow import pow
 
 from lib.bitshift import bitshift_right, bitshift_left
 from lib.types import IntsSequence
-from lib.pow import pow
 
 func extract_nibble{range_check_ptr}(word: felt, word_len_bytes: felt, position: felt) -> (
     res: felt
@@ -89,8 +89,7 @@ func to_words128_rec{range_check_ptr}(
             );
         }
     } else {
-        let (local multiplicator) = pow(2, 64);
-        local left_part = words64.element[current_word_index] * multiplicator;
+        local left_part = words64.element[current_word_index] * 2 ** 64;
         local original = words64.element[current_word_index];
         local word128 = left_part + words64.element[current_word_index + 1];
         assert acc[acc_len] = word128;

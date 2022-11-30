@@ -2,10 +2,10 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.math import unsigned_div_rem
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.pow import pow
 
 from lib.types import IntsSequence, RLPItem
 from lib.bitshift import bitshift_right, bitshift_left
-from lib.pow import pow
 
 func getElement{range_check_ptr}(rlp: IntsSequence, position: felt) -> (res: RLPItem) {
     alloc_locals;
@@ -242,11 +242,10 @@ func extract_data_rec{range_check_ptr}(
     }
 
     local new_word = left_part + right_part;
-    let (local divider: felt) = pow(2, 64);
 
     local range_check_ptr = range_check_ptr;
 
-    let (_, new_word_masked) = unsigned_div_rem(new_word, divider);
+    let (_, new_word_masked) = unsigned_div_rem(new_word, 2 ** 64);
 
     local range_check_ptr = range_check_ptr;
 
