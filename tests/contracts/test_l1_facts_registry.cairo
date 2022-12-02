@@ -106,7 +106,7 @@ func registry_initialized{syscall_ptr: felt*, range_check_ptr}() {
 
         ids.l1_headers_store = context.l1_headers_store_addr
 
-        block = mocked_blocks[3]
+        block = mocked_blocks[7]
         block_header = build_block_header(block)
         block_rlp = Data.from_bytes(block_header.raw_rlp()).to_ints()
 
@@ -116,7 +116,7 @@ func registry_initialized{syscall_ptr: felt*, range_check_ptr}() {
         parent_hash = block_parent_hash.to_ints(Encoding.BIG).values
         ids.parent_hash_len = len(parent_hash)
         segments.write_arg(ids.parent_hash, parent_hash)
-        ids.block_number = mocked_blocks[3]['number'] + 1
+        ids.block_number = mocked_blocks[7]['number'] + 1
 
         stop_prank_callable = start_prank(context.relayer_pub_key, target_contract_address=context.l1_headers_store_addr)
     %}
@@ -133,7 +133,7 @@ func registry_initialized{syscall_ptr: felt*, range_check_ptr}() {
     local block_number_process_block;
     local options_set;
     %{
-        block = mocked_blocks[3]
+        block = mocked_blocks[7]
         block_header = build_block_header(block)
         block_rlp = Data.from_bytes(block_header.raw_rlp()).to_ints()
 
@@ -174,7 +174,7 @@ func test_prove_account{syscall_ptr: felt*, range_check_ptr}() {
     %{
         from mocks.trie_proofs import trie_proofs
         ids.options_set = 15 # saves everything in state
-        ids.block_number = mocked_blocks[3]['number']
+        ids.block_number = mocked_blocks[7]['number']
 
         proof = list(map(lambda element: Data.from_hex(element).to_ints(), trie_proofs[1]['accountProof']))
         flat_proof = []
@@ -215,7 +215,7 @@ func test_prove_account{syscall_ptr: felt*, range_check_ptr}() {
     local block;
     %{
         ids.account_160 = int(l1_account_address.to_hex()[2:], 16)
-        ids.block = mocked_blocks[3]['number']
+        ids.block = mocked_blocks[7]['number']
     %}
     let (storage_hash) = FactsRegistry.get_verified_account_storage_hash(
         contract_address=facts_registry, account_160=account_160, block=block
@@ -262,7 +262,7 @@ func test_get_storage{syscall_ptr: felt*, range_check_ptr}() {
     %{
         from mocks.trie_proofs import trie_proofs
         ids.options_set = 15 # saves everything in state
-        ids.block_number = mocked_blocks[3]['number']
+        ids.block_number = mocked_blocks[7]['number']
 
         proof = list(map(lambda element: Data.from_hex(element).to_ints(), trie_proofs[1]['accountProof']))
         flat_proof = []
@@ -335,7 +335,7 @@ func test_get_storage{syscall_ptr: felt*, range_check_ptr}() {
         segments.write_arg(ids.proofs_concat_2, flat_storage_proof)
 
         ids.account_160 = int(trie_proofs[2]['address'][2:], 16)
-        ids.block = mocked_blocks[3]['number']
+        ids.block = mocked_blocks[7]['number']
     %}
     local slot: StorageSlot = StorageSlot(slot_word1, slot_word2, slot_word3, slot_word4);
     let (res_bytes_len: felt, res_len: felt, res: felt*) = FactsRegistry.get_storage(
@@ -378,7 +378,7 @@ func test_get_storage_uint{syscall_ptr: felt*, range_check_ptr}() {
     %{
         from mocks.trie_proofs import trie_proofs
         ids.options_set = 15 # saves everything in state
-        ids.block_number = mocked_blocks[3]['number']
+        ids.block_number = mocked_blocks[7]['number']
 
         proof = list(map(lambda element: Data.from_hex(element).to_ints(), trie_proofs[1]['accountProof']))
         flat_proof = []
@@ -451,7 +451,7 @@ func test_get_storage_uint{syscall_ptr: felt*, range_check_ptr}() {
         segments.write_arg(ids.proofs_concat_2, flat_storage_proof)
 
         ids.account_160 = int(trie_proofs[2]['address'][2:], 16)
-        ids.block = mocked_blocks[3]['number']
+        ids.block = mocked_blocks[7]['number']
     %}
     local slot: StorageSlot = StorageSlot(slot_word1, slot_word2, slot_word3, slot_word4);
     let (res) = FactsRegistry.get_storage_uint(
