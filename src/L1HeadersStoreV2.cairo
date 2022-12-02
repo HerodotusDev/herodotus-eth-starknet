@@ -140,6 +140,111 @@ func process_block{
     return ();
 }
 
+@external
+func process_block_from_message{
+    pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(
+    reference_block_number: felt,
+    block_header_rlp_bytes_len: felt,
+    block_header_rlp_len: felt,
+    block_header_rlp: felt*,
+    mmr_peaks_len: felt,
+    mmr_peaks: felt*,
+) {
+    alloc_locals;
+
+    let (local child_block_parent_hash: Keccak256Hash) = _commitments_block_parent_hash.read(
+        reference_block_number
+    );
+
+    validate_provided_header_rlp(
+        child_block_parent_hash, block_header_rlp_bytes_len, block_header_rlp_len, block_header_rlp
+    );
+
+    update_mmr(
+        block_header_rlp_bytes_len, block_header_rlp_len, block_header_rlp, mmr_peaks_len, mmr_peaks
+    );
+    return ();
+}
+
+@external
+func process_till_block{
+    pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(
+    reference_block_number: felt,
+    reference_proof_leaf_index: felt,
+    reference_proof_leaf_value: felt,
+    reference_proof_len: felt,
+    reference_proof: felt*,
+    reference_proof_peaks_len: felt,
+    reference_proof_peaks: felt*,
+    reference_header_rlp_bytes_len: felt,
+    reference_header_rlp_len: felt,
+    reference_header_rlp: felt*,
+    block_headers_lens_bytes_len: felt,
+    block_headers_lens_bytes: felt*,
+    block_headers_lens_words_len: felt,
+    block_headers_lens_words: felt*,
+    block_headers_concat_len: felt,
+    block_headers_concat: felt*,
+    mmr_peaks_lens_len: felt,
+    mmr_peaks_lens: felt*,
+    mmr_peaks_concat_len: felt,
+    mmr_peaks_concat: felt*,
+) {
+    alloc_locals;
+    assert block_headers_lens_bytes_len = block_headers_lens_words_len;
+
+    // Verify the reference block proof and check its parent block
+    validate_parent_block_and_proof_integrity(
+        reference_proof_leaf_index,
+        reference_proof_leaf_value,
+        reference_proof_len,
+        reference_proof,
+        reference_proof_peaks_len,
+        reference_proof_peaks,
+        reference_header_rlp_bytes_len,
+        reference_header_rlp_len,
+        reference_header_rlp,
+        block_headers_lens_bytes[0],
+        block_headers_lens_words[0],
+        block_headers_concat,
+    );
+
+    let (local current_peaks: felt*) = alloc();
+    let (local updated_peaks_offset) = slice_arr(
+        0, mmr_peaks_lens[0], mmr_peaks_concat, mmr_peaks_concat_len, current_peaks, 0, 0
+    );
+
+    // Add the first block
+    update_mmr(
+        block_headers_lens_bytes[0],
+        block_headers_lens_words[0],
+        block_headers_concat,
+        mmr_peaks_lens[0],
+        current_peaks,
+    );
+
+    // Process the remaining blocks and recursively update the MMR tree.
+    process_till_block_rec(
+        block_headers_lens_bytes_len,
+        block_headers_lens_bytes,
+        block_headers_lens_words_len,
+        block_headers_lens_words,
+        block_headers_concat_len,
+        block_headers_concat,
+        mmr_peaks_lens_len,
+        mmr_peaks_lens,
+        mmr_peaks_concat_len,
+        mmr_peaks_concat,
+        0,
+        0,
+        0,
+        updated_peaks_offset,
+    );
+    return ();
+}
+
 func validate_parent_block{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(
@@ -245,111 +350,6 @@ func update_mmr{
         word_2,
         word_3,
         word_4,
-    );
-    return ();
-}
-
-@external
-func process_block_from_message{
-    pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
-}(
-    reference_block_number: felt,
-    block_header_rlp_bytes_len: felt,
-    block_header_rlp_len: felt,
-    block_header_rlp: felt*,
-    mmr_peaks_len: felt,
-    mmr_peaks: felt*,
-) {
-    alloc_locals;
-
-    let (local child_block_parent_hash: Keccak256Hash) = _commitments_block_parent_hash.read(
-        reference_block_number
-    );
-
-    validate_provided_header_rlp(
-        child_block_parent_hash, block_header_rlp_bytes_len, block_header_rlp_len, block_header_rlp
-    );
-
-    update_mmr(
-        block_header_rlp_bytes_len, block_header_rlp_len, block_header_rlp, mmr_peaks_len, mmr_peaks
-    );
-    return ();
-}
-
-@external
-func process_till_block{
-    pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
-}(
-    reference_block_number: felt,
-    reference_proof_leaf_index: felt,
-    reference_proof_leaf_value: felt,
-    reference_proof_len: felt,
-    reference_proof: felt*,
-    reference_proof_peaks_len: felt,
-    reference_proof_peaks: felt*,
-    reference_header_rlp_bytes_len: felt,
-    reference_header_rlp_len: felt,
-    reference_header_rlp: felt*,
-    block_headers_lens_bytes_len: felt,
-    block_headers_lens_bytes: felt*,
-    block_headers_lens_words_len: felt,
-    block_headers_lens_words: felt*,
-    block_headers_concat_len: felt,
-    block_headers_concat: felt*,
-    mmr_peaks_lens_len: felt,
-    mmr_peaks_lens: felt*,
-    mmr_peaks_concat_len: felt,
-    mmr_peaks_concat: felt*,
-) {
-    alloc_locals;
-    assert block_headers_lens_bytes_len = block_headers_lens_words_len;
-
-    // Verify the reference block proof and check its parent block
-    validate_parent_block_and_proof_integrity(
-        reference_proof_leaf_index,
-        reference_proof_leaf_value,
-        reference_proof_len,
-        reference_proof,
-        reference_proof_peaks_len,
-        reference_proof_peaks,
-        reference_header_rlp_bytes_len,
-        reference_header_rlp_len,
-        reference_header_rlp,
-        block_headers_lens_bytes[0],
-        block_headers_lens_words[0],
-        block_headers_concat,
-    );
-
-    let (local current_peaks: felt*) = alloc();
-    let (local updated_peaks_offset) = slice_arr(
-        0, mmr_peaks_lens[0], mmr_peaks_concat, mmr_peaks_concat_len, current_peaks, 0, 0
-    );
-
-    // Add the first block
-    update_mmr(
-        block_headers_lens_bytes[0],
-        block_headers_lens_words[0],
-        block_headers_concat,
-        mmr_peaks_lens[0],
-        current_peaks,
-    );
-
-    // Process the remaining blocks and recursively update the MMR tree.
-    process_till_block_rec(
-        block_headers_lens_bytes_len,
-        block_headers_lens_bytes,
-        block_headers_lens_words_len,
-        block_headers_lens_words,
-        block_headers_concat_len,
-        block_headers_concat,
-        mmr_peaks_lens_len,
-        mmr_peaks_lens,
-        mmr_peaks_concat_len,
-        mmr_peaks_concat,
-        0,
-        0,
-        0,
-        updated_peaks_offset,
     );
     return ();
 }

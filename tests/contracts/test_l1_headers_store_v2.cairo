@@ -329,7 +329,7 @@ func test_process_invalid_block{syscall_ptr: felt*, range_check_ptr}() {
 }
 
 @external
-func test_process_til_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+func test_process_till_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     alloc_locals;
     local l1_headers_store;
     let (parent_hash: felt*) = alloc();
