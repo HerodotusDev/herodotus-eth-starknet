@@ -2,7 +2,7 @@
 protostar-version = "0.8.1"
 lib-path = "lib"
 
-cairo-path = ["lib/cairo_contracts/src", "lib/cairo_mmr", "lib"]
+cairo-path = ["lib/cairo_contracts/src", "lib/cairo_mmr", "lib", "tests"]
 
 [contracts]
 Account = ["src/external/Account.cairo"]

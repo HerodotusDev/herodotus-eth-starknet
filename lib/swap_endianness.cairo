@@ -3,7 +3,7 @@ from starkware.cairo.common.math import assert_le
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.math import assert_nn_le, unsigned_div_rem
 from starkware.cairo.common.math_cmp import is_in_range
-from lib.pow import pow
+from starkware.cairo.common.pow import pow
 from lib.types import IntsSequence
 
 // func swap_endianness_many_words{ range_check_ptr, bitwise_ptr : BitwiseBuiltin* }(input: IntsSequence) -> (output: IntsSequence):

@@ -1,4 +1,4 @@
-from lib.pow import pow
+from starkware.cairo.common.pow import pow
 from starkware.cairo.common.math import unsigned_div_rem
 
 // Argument bitset: n bits number in range(0, 2**n - 1)

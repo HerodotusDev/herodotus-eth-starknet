@@ -5,7 +5,7 @@ from starkware.cairo.common.alloc import alloc
 
 from lib.bitshift import bitshift_right, bitshift_left
 from lib.types import IntsSequence
-from lib.pow import pow
+from starkware.cairo.common.pow import pow
 
 func extract_nibble{range_check_ptr}(word: felt, word_len_bytes: felt, position: felt) -> (
     res: felt

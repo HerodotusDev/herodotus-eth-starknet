@@ -1,6 +1,6 @@
 from starkware.cairo.common.math import assert_le
 from starkware.cairo.common.math import unsigned_div_rem
-from lib.pow import pow
+from starkware.cairo.common.pow import pow
 
 func bitshift_right{range_check_ptr}(word: felt, num_bits: felt) -> (shifted: felt) {
     // verifies word fits in 64bits
