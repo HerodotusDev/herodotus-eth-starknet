@@ -5,6 +5,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.hash_state import hash_felts
 from starkware.cairo.common.hash import hash2
+from starkware.starknet.common.syscalls import get_tx_info
 
 from lib.types import Keccak256Hash, Address
 
@@ -35,6 +36,8 @@ namespace L1HeadersStore {
         block_header_rlp: felt*,
         mmr_peaks_len: felt,
         mmr_peaks: felt*,
+        inclusion_tx_hash: felt,
+        mmr_pos: felt,
     ) {
     }
 
@@ -69,7 +72,12 @@ namespace L1HeadersStore {
         mmr_peaks_lens: felt*,
         mmr_peaks_concat_len: felt,
         mmr_peaks_concat: felt*,
+        inclusion_tx_hash: felt,
+        mmr_pos: felt,
     ) {
+    }
+
+    func get_mmr_last_pos() -> (res: felt) {
     }
 }
 
@@ -246,6 +254,9 @@ func test_process_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
         ids.block_2_number_process_block = block['number'] + 1
     %}
 
+    let (info) = get_tx_info();
+    let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
+
     L1HeadersStore.process_block(
         contract_address=l1_headers_store,
         reference_block_number=block_2_number_process_block,
@@ -263,6 +274,8 @@ func test_process_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
         block_header_rlp=block_2_header_rlp,
         mmr_peaks_len=1,
         mmr_peaks=mmr_peaks,
+        inclusion_tx_hash=info.transaction_hash,
+        mmr_pos=mmr_pos,
     );
     return ();
 }
@@ -316,6 +329,7 @@ func test_process_invalid_block{syscall_ptr: felt*, range_check_ptr}() {
 
     let (local mmr_peaks: felt*) = alloc();
     %{ expect_revert() %}
+
     L1HeadersStore.process_block_from_message(
         contract_address=l1_headers_store,
         reference_block_number=block_number_process_block,
@@ -378,7 +392,6 @@ func test_process_till_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         ids.block_number_process_block = block['number'] + 1
     %}
     let (mmr_peaks: felt*) = alloc();
-
     // Add first node to MMR (reference block is in contract storage).
     L1HeadersStore.process_block_from_message(
         contract_address=l1_headers_store,
@@ -469,6 +482,8 @@ func test_process_till_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
     let (mmr_peaks_lens: felt*) = alloc();
     %{ segments.write_arg(ids.mmr_peaks_lens, [1, 1, 2]) %}
 
+    let (info) = get_tx_info();
+    let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
     L1HeadersStore.process_till_block(
         contract_address=l1_headers_store,
         reference_block_number=start_block_number,
@@ -491,6 +506,8 @@ func test_process_till_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         mmr_peaks_lens=mmr_peaks_lens,
         mmr_peaks_concat_len=4,
         mmr_peaks_concat=mmr_peaks_concat,
+        inclusion_tx_hash=info.transaction_hash,
+        mmr_pos=mmr_pos,
     );
     return ();
 }

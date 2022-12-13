@@ -3,7 +3,7 @@
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from starkware.starknet.common.syscalls import get_caller_address
+from starkware.starknet.common.syscalls import get_caller_address, get_tx_info
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.math_cmp import is_le
 
@@ -15,7 +15,12 @@ from lib.blockheader_rlp_extractor import decode_parent_hash, decode_block_numbe
 from lib.bitset import bitset_get
 from lib.swap_endianness import swap_endianness_64
 from starkware.cairo.common.hash_state import hash_felts
-from cairo_mmr.src.mmr import append as mmr_append, verify_proof as mmr_verify_proof
+from cairo_mmr.src.historical_mmr import (
+    append as mmr_append,
+    verify_past_proof as mmr_verify_past_proof,
+    get_last_pos as mmr_get_last_pos,
+    get_inclusion_tx_hash_to_root as mmr_get_inclusion_tx_hash_to_root,
+)
 
 @event
 func accumulator_update(
@@ -116,6 +121,8 @@ func process_block{
     block_header_rlp: felt*,
     mmr_peaks_len: felt,
     mmr_peaks: felt*,
+    inclusion_tx_hash: felt,
+    mmr_pos: felt,
 ) {
     alloc_locals;
 
@@ -132,6 +139,8 @@ func process_block{
         block_header_rlp_bytes_len,
         block_header_rlp_len,
         block_header_rlp,
+        inclusion_tx_hash,
+        mmr_pos,
     );
 
     update_mmr(
@@ -191,6 +200,8 @@ func process_till_block{
     mmr_peaks_lens: felt*,
     mmr_peaks_concat_len: felt,
     mmr_peaks_concat: felt*,
+    inclusion_tx_hash: felt,
+    mmr_pos: felt,
 ) {
     alloc_locals;
     assert block_headers_lens_bytes_len = block_headers_lens_words_len;
@@ -209,6 +220,8 @@ func process_till_block{
         block_headers_lens_bytes[0],
         block_headers_lens_words[0],
         block_headers_concat,
+        inclusion_tx_hash,
+        mmr_pos,
     );
 
     let (local current_peaks: felt*) = alloc();
@@ -243,6 +256,39 @@ func process_till_block{
         updated_peaks_offset,
     );
     return ();
+}
+
+@external
+func get_mmr_last_pos{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
+    res: felt
+) {
+    let (last_pos) = mmr_get_last_pos();
+    return (res=last_pos);
+}
+
+@external
+func call_mmr_verify_past_proof{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    index: felt,
+    value: felt,
+    proof_len: felt,
+    proof: felt*,
+    peaks_len: felt,
+    peaks: felt*,
+    inclusion_tx_hash: felt,
+    mmr_pos: felt,
+) {
+    mmr_verify_past_proof(
+        index, value, proof_len, proof, peaks_len, peaks, inclusion_tx_hash, mmr_pos
+    );
+    return ();
+}
+
+@external
+func call_get_inclusion_tx_hash_to_root{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}(tx_hash: felt) -> (res: felt) {
+    let (res) = mmr_get_inclusion_tx_hash_to_root(tx_hash);
+    return (res=res);
 }
 
 func validate_parent_block{
@@ -287,16 +333,20 @@ func validate_parent_block_and_proof_integrity{
     block_header_rlp_bytes_len: felt,
     block_header_rlp_len: felt,
     block_header_rlp: felt*,
+    inclusion_tx_hash: felt,
+    mmr_pos: felt,
 ) {
     alloc_locals;
 
-    mmr_verify_proof(
+    call_mmr_verify_past_proof(
         index=reference_proof_leaf_index,
         value=reference_proof_leaf_value,
         proof_len=reference_proof_len,
         proof=reference_proof,
         peaks_len=reference_proof_peaks_len,
         peaks=reference_proof_peaks,
+        inclusion_tx_hash=inclusion_tx_hash,
+        mmr_pos=mmr_pos,
     );
 
     local rlp: IntsSequence = IntsSequence(reference_header_rlp, reference_header_rlp_len, reference_header_rlp_bytes_len);
@@ -327,8 +377,10 @@ func update_mmr{
     let (pedersen_hash) = hash_felts{hash_ptr=pedersen_ptr}(
         data=block_header_rlp, length=block_header_rlp_len
     );
-    mmr_append(elem=pedersen_hash, peaks_len=mmr_peaks_len, peaks=mmr_peaks);
-
+    let (info) = get_tx_info();
+    mmr_append(
+        elem=pedersen_hash, peaks_len=mmr_peaks_len, peaks=mmr_peaks, tx_hash=info.transaction_hash
+    );
     let (local keccak_ptr: felt*) = alloc();
     let keccak_ptr_start = keccak_ptr;
 
@@ -343,14 +395,7 @@ func update_mmr{
     local word_4 = keccak_hash[3];
 
     // Emit the update event
-    accumulator_update.emit(
-        pedersen_hash,
-        processed_block_number,
-        word_1,
-        word_2,
-        word_3,
-        word_4,
-    );
+    accumulator_update.emit(pedersen_hash, processed_block_number, word_1, word_2, word_3, word_4);
     return ();
 }
 
