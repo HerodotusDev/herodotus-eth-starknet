@@ -42,32 +42,72 @@ namespace IL1HeadersStore {
     }
 }
 
+//
+// Stores the L1 headers store contract address.
+//
 @storage_var
 func _l1_headers_store_addr() -> (res: felt) {
 }
 
+//
+// @dev
+// Stores the storage hash for a verified account at a specified block number.
+// @param account: The address of the account whose storage hash should be stored.
+// @param block: The block number at which the storage hash was verified.
+// @return res: The storage hash for the verified account at the specified block number.
+//
 @storage_var
 func _verified_account_storage_hash(account: felt, block: felt) -> (res: Keccak256Hash) {
 }
 
+//
+// @dev Stores the code hash for a verified account at a specified block number.
+//
+// @param account: The address of the account whose code hash should be stored.
+// @param block: The block number at which the code hash was verified.
+// @return res: The code hash for the verified account at the specified block number.
+//
 @storage_var
 func _verified_account_code_hash(account: felt, block: felt) -> (res: Keccak256Hash) {
 }
 
+//
+// @dev Stores the balance for a verified account at a specified block number.
+// @param account: The address of the account whose balance should be stored.
+// @param block: The block number at which the balance was verified.
+// @return res: The balance for the verified account at the specified block number.
+//
 @storage_var
 func _verified_account_balance(account: felt, block: felt) -> (res: felt) {
 }
 
+//
+// @dev Stores the nonce for a verified account at a specified block number.
+// @param account: The address of the account whose nonce should be stored.
+// @param block: The block number at which the nonce was verified.
+// @return res: The nonce for the verified account at the specified block number.
+//
 @storage_var
 func _verified_account_nonce(account: felt, block: felt) -> (res: felt) {
 }
 
+//
+// @dev Gets the address of the L1 headers store contract.
+// @return res: The address of the L1 headers store contract.
+//
 @view
 func get_l1_headers_store_addr{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     ) -> (res: felt) {
     return _l1_headers_store_addr.read();
 }
 
+//
+// @dev Gets the storage root hash for a verified account at a specified block number.
+//
+// @param account_160: The address of the account whose storage root hash should be retrieved.
+// @param block: The block number at which the storage root hash was verified.
+// @return res: The storage root hash for the verified account at the specified block number.
+//
 @view
 func get_verified_account_storage_hash{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
@@ -75,6 +115,14 @@ func get_verified_account_storage_hash{
     return _verified_account_storage_hash.read(account_160, block);
 }
 
+//
+// @dev
+// Gets the code hash for a verified account at a specified block number.
+//
+// @param account_160: The address of the account whose code hash should be retrieved.
+// @param block: The block number at which the code hash was verified.
+// @return res: The code hash for the verified account at the specified block number.
+//
 @view
 func get_verified_account_code_hash{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
@@ -82,6 +130,12 @@ func get_verified_account_code_hash{
     return _verified_account_code_hash.read(account_160, block);
 }
 
+//
+// @dev Gets the balance for a verified account at a specified block number.
+// @param account_160: The address of the account whose balance should be retrieved.
+// @param block: The block number at which the balance was verified.
+// @return res: The balance for the verified account at the specified block number.
+//
 @view
 func get_verified_account_balance{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     account_160: felt, block: felt
@@ -89,6 +143,12 @@ func get_verified_account_balance{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*
     return _verified_account_balance.read(account_160, block);
 }
 
+//
+// @dev Gets the nonce for a verified account at a specified block number.
+// @param account_160: The address of the account whose nonce should be retrieved.
+// @param block: The block number at which the nonce was verified.
+// @return res: The nonce for the verified account at the specified block number.
+//
 @view
 func get_verified_account_nonce{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     account_160: felt, block: felt
@@ -104,12 +164,33 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     return ();
 }
 
-// options_set: indicates which element of the decoded proof should be saved in state
-// options_set: is a felt in range 0 to 16
-// options_set: storage_hash will be saved if bit 0 of the arg is positive
-// options_set: code_hash will be saved if bit 1 of the arg is positive
-// options_set: nonce will be saved if bit 2 of the arg is positive
-// options_set: balance will be saved if bit 3 of the arg is positive
+//
+// Proves the existence and state of an account at a specified block number.
+// @param options_set: A felt in the range of 0 to 16 that specifies which elements of the decoded proof should be saved in state.
+// Bit 0 indicates whether the storage hash should be saved,
+// bit 1 indicates whether the code hash should be saved,
+// bit 2 indicates whether the nonce should be saved,
+// and bit 3 indicates whether the balance should be saved.
+// @param block_number: The block number at which the account's existence and state should be verified.
+// @param account: The address of the account whose existence and state should be verified.
+// @param proof_sizes_bytes_len: The length of the `proof_sizes_bytes` array, in words.
+// @param proof_sizes_bytes: An array of integers that specifies the size of each proof element, in bytes.
+// @param proof_sizes_words_len: The length of the `proof_sizes_words` array, in words.
+// @param proof_sizes_words: An array of integers that specifies the size of each proof element, in words.
+// @param proofs_concat_len: The length of the `proofs_concat` array, in words.
+// @param proofs_concat: An array that contains the concatenated proofs for each element of the account state.
+// @param block_proof_leaf_index: The index of the leaf node in the Merkle proof for the block header.
+// @param block_proof_leaf_value: The value of the leaf node in the Merkle proof for the block header.
+// @param block_proof_len: The length of the `block_proof` array, in words.
+// @param block_proof: An array that contains the Merkle proof for the block header.
+// @param block_proof_peaks_len: The length of the `block_proof_peaks` array, in words.
+// @param block_proof_peaks: An array that contains the peak indices for the Merkle proof of the block header.
+// @param block_header_rlp_len: The length of the `block_header_rlp` array, in words.
+// @param block_header_rlp: An array that contains the RLP-encoded block header.
+// @param block_header_rlp_bytes_len: The length of the RLP-encoded block header, in bytes.
+// @param inclusion_tx_hash: The hash of the transaction that includes the block header in the blockchain.
+// @param mmr_pos: The position of the block header in the MMR tree.
+//
 @external
 func prove_account{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
@@ -294,6 +375,22 @@ func prove_account{
     return ();
 }
 
+//
+// @dev Gets the value of a storage slot for a given account at a specified block number.
+//
+// @param block: The block number at which the storage slot's value should be retrieved.
+// @param account_160: The address of the account whose storage slot value should be retrieved.
+// @param slot: The storage slot for which the value should be retrieved.
+// @param proof_sizes_bytes_len: The length of the `proof_sizes_bytes` array, in words.
+// @param proof_sizes_bytes: An array of integers that specifies the size of each proof element, in bytes.
+// @param proof_sizes_words_len: The length of the `proof_sizes_words` array, in words.
+// @param proof_sizes_words: An array of integers that specifies the size of each proof element, in words.
+// @param proofs_concat_len: The length of the `proofs_concat` array, in words.
+// @param proofs_concat: An array that contains the concatenated proofs for each element of the account state.
+// @return res_bytes_len: The length of the returned storage slot value, in bytes.
+// @return res_len: The length of the returned storage slot value, in words.
+// @return res: An array containing the value of the storage slot for the given account at the specified block number.
+//
 @view
 func get_storage{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
@@ -362,6 +459,21 @@ func get_storage{
     return (slot_value.element_size_bytes, slot_value.element_size_words, slot_value.element);
 }
 
+//
+// @dev Gets the value of a storage slot for a given account at a specified block number.
+// @param block: The block number at which the storage slot's value should be retrieved.
+// @param account_160: The address of the account whose storage slot value should be retrieved.
+// @param slot: The storage slot for which the value should be retrieved.
+// @param proof_sizes_bytes_len: The length of the `proof_sizes_bytes` array, in words.
+// @param proof_sizes_bytes: An array of integers that specifies the size of each proof element, in bytes.
+// @param proof_sizes_words_len: The length of the `proof_sizes_words` array, in words.
+// @param proof_sizes_words: An array of integers that specifies the size of each proof element, in words.
+// @param proofs_concat_len: The length of the `proofs_concat` array, in words.
+// @param proofs_concat: An array that contains the concatenated proofs for each element of the account state.
+// @return res_bytes_len: The length of the returned storage slot value, in bytes.
+// @return res_len: The length of the returned storage slot value, in words.
+// @return res: An array containing the value of the storage slot for the given account at the specified block number.
+//
 @view
 func get_storage_uint{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*

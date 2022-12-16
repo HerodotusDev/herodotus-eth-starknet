@@ -12,7 +12,7 @@ namespace L1MessagesProxy {
         l1_headers_store_addr: felt,
         owner: felt,
         relay_asset_addr: felt,
-        minimum_required_in_asset_to_relay: felt,
+        required_in_asset_to_relay: felt,
     ) {
     }
 
@@ -113,7 +113,7 @@ func __setup__{syscall_ptr: felt*, range_check_ptr}() {
     local relay_asset_addr;
     local l1_messages_sender;
     local owner;
-    local minimum_required_in_asset_to_relay;
+    local required_in_asset_to_relay;
     local relayer_pub_key;
     %{
         from starkware.crypto.signature.signature import (
@@ -150,7 +150,7 @@ func __setup__{syscall_ptr: felt*, range_check_ptr}() {
         context.l1_messages_sender = ids.l1_messages_sender
         ids.owner = 123
         context.owner = ids.owner
-        ids.minimum_required_in_asset_to_relay = 100
+        ids.required_in_asset_to_relay = 100
     %}
     L1MessagesProxy.initialize(
         contract_address=l1_messages_proxy_address,
@@ -158,7 +158,7 @@ func __setup__{syscall_ptr: felt*, range_check_ptr}() {
         l1_headers_store_addr=l1_headers_store_addr,
         owner=owner,
         relay_asset_addr=relay_asset_addr,
-        minimum_required_in_asset_to_relay=minimum_required_in_asset_to_relay,
+        required_in_asset_to_relay=required_in_asset_to_relay,
     );
     return ();
 }

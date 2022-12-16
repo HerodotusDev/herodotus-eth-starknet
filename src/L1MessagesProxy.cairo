@@ -58,7 +58,7 @@ namespace IERC20 {
 func _l1_messages_sender() -> (res: felt) {
 }
 
-// Starknet address of the he
+// Starknet address of the L1 headers store contract
 @storage_var
 func _l1_headers_store_addr() -> (res: felt) {
 }
@@ -68,7 +68,7 @@ func _l1_headers_store_addr() -> (res: felt) {
 func _owner() -> (res: felt) {
 }
 
-// Optimistic message relayer pubkey
+// Optimistic message relayer public key
 @storage_var
 func _relayer_pubkey() -> (res: felt) {
 }
@@ -102,6 +102,10 @@ func _initialized() -> (res: felt) {
 //                   VIEW FUNCTIONS
 //###################################################
 
+//
+// @dev Gets the initialized state of the contract.
+// @return The initialized state of the contract (1 for initialized, 0 for uninitialized).
+//
 @view
 func get_initialized{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
     res: felt
@@ -109,6 +113,10 @@ func get_initialized{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
     return _initialized.read();
 }
 
+//
+// @dev Gets the address of the L1 messages sender contract.
+// @return The address of the L1 messages sender contract.
+//
 @view
 func get_l1_messages_sender{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
     res: felt
@@ -116,17 +124,29 @@ func get_l1_messages_sender{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, rang
     return _l1_messages_sender.read();
 }
 
+//
+// @dev Gets the address of the L1 headers store contract.
+// @return The address of the L1 headers store contract.
+//
 @view
 func get_l1_headers_store_addr{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     ) -> (res: felt) {
     return _l1_headers_store_addr.read();
 }
 
+//
+// @dev Gets the owner address of the contract.
+// @return The owner address of the contract.
+//
 @view
 func get_owner{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (res: felt) {
     return _owner.read();
 }
 
+//
+// @dev Gets the public key of the message relayer.
+// @return The public key of the message relayer.
+//
 @view
 func get_relayer_pubkey{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
     res: felt
@@ -134,6 +154,10 @@ func get_relayer_pubkey{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
     return _relayer_pubkey.read();
 }
 
+//
+// @dev Gets the amount of stake held by the message relayer.
+// @return The amount of stake held by the message relayer.
+//
 @view
 func get_relayer_stake{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
     res: felt
@@ -141,6 +165,10 @@ func get_relayer_stake{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
     return _relayer_stake.read();
 }
 
+//
+// @dev Gets the address of the message relayer.
+// @return The address of the message relayer.
+//
 @view
 func get_relayer_addr{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
     res: felt
@@ -148,6 +176,10 @@ func get_relayer_addr{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
     return _relayer_addr.read();
 }
 
+//
+// @dev Gets the required stake amount to relay.
+// @return The required stake amount to relay.
+//
 @view
 func get_relayer_required_stake_amount{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
@@ -155,20 +187,31 @@ func get_relayer_required_stake_amount{
     return _relayer_required_stake_amount.read();
 }
 
+//
+// @dev Gets the contract address of the relayer's staked asset.
+// @return The contract address of the relayer's staked asset.
+//
 @view
 func get_relayer_stake_asset_addr{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     ) -> (res: felt) {
     return _relayer_stake_asset_addr.read();
 }
 
-// Initializes the contract
+//
+// @dev Initializes this contract with the specified values.
+// @param l1_messages_sender The address of the L1 messages sender contract.
+// @param l1_headers_store_addr The address of the L1 headers store contract.
+// @param owner The address of the owner of the contract.
+// @param relay_asset_addr The address of the relay asset contract (e.g. USDC ERC20).
+// @param required_in_asset_to_relay The exact amount of asset required to be staked by relayers.
+//
 @external
 func initialize{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}(
     l1_messages_sender: felt,
     l1_headers_store_addr: felt,
     owner: felt,
     relay_asset_addr: felt,
-    minimum_required_in_asset_to_relay: felt,
+    required_in_asset_to_relay: felt,
 ) {
     let (initialized) = _initialized.read();
     assert initialized = 0;
@@ -180,7 +223,7 @@ func initialize{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}
     // Relayer default settings
     let (relayer_required_stake_amount) = _relayer_required_stake_amount.read();
     assert relayer_required_stake_amount = 0;
-    _relayer_required_stake_amount.write(minimum_required_in_asset_to_relay);
+    _relayer_required_stake_amount.write(required_in_asset_to_relay);
 
     let (relayer_stake_asset_addr) = _relayer_stake_asset_addr.read();
     assert relayer_stake_asset_addr = 0;
@@ -188,6 +231,10 @@ func initialize{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}
     return ();
 }
 
+//
+// @dev Increases the required stake amount to relay.
+// @param new_required_stake_amount The new required stake amount to relay.
+//
 @external
 func increase_required_stake_amount{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr
@@ -209,6 +256,10 @@ func increase_required_stake_amount{
     return ();
 }
 
+//
+// @dev Changes the owner of the contract.
+// @param new_owner The new owner of the contract.
+//
 @external
 func change_owner{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}(
     new_owner: felt
@@ -221,6 +272,11 @@ func change_owner{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_pt
     return ();
 }
 
+//
+// @dev Changes the contract addresses of the L1 messages sender and L1 headers store.
+// @param new_sender_addr The new address of the L1 messages sender contract.
+// @param new_headers_store_addr The new address of the L1 headers store contract.
+//
 @external
 func change_contract_addresses{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}(
     new_sender_addr: felt, new_headers_store_addr: felt
@@ -235,6 +291,10 @@ func change_contract_addresses{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, r
     return ();
 }
 
+//
+// @dev Changes the public key of the message relayer.
+// @param relayer_pubkey The new public key of the message relayer.
+//
 @external
 func change_relayer_pubkey{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}(
     relayer_pubkey: felt
@@ -248,6 +308,22 @@ func change_relayer_pubkey{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range
     return ();
 }
 
+//
+// This function allows a relayer to optimistically relay an L1 message to the L1 headers store.
+// @param parent_hash_word_1: the first word of the parent block's hash
+// @param parent_hash_word_2: the second word of the parent block's hash
+// @param parent_hash_word_3: the third word of the parent block's hash
+// @param parent_hash_word_4: the fourth word of the parent block's hash
+// @param block_number: the number of the block being relayed (from the source chain)
+// @param signature_len: the length of the signature parameter
+// @param signature: a pointer to an array of felt values representing the signature to verify
+// Preconditions
+// The parent hash must have 4 words.
+// The relayer must have the required amount of tokens staked.
+// The ECDSA signature must be valid for the message.
+// Postconditions
+// The message will be optimistically relayed to the L1 headers store.
+//
 @external
 func relay_optimistic{
     pedersen_ptr: HashBuiltin*, ecdsa_ptr: SignatureBuiltin*, syscall_ptr: felt*, range_check_ptr
@@ -302,6 +378,23 @@ func relay_optimistic{
     return ();
 }
 
+//
+// This function receives a message from the L1 layer and processes it.
+// The message is validated and L1 headers store.
+// @param from_address: the sender's address from L1.
+// @param parent_hash_word_1: the first word of the parent hash of the message.
+// @param parent_hash_word_2: the second word of the parent hash of the message.
+// @param parent_hash_word_3: the third word of the parent hash of the message.
+// @param parent_hash_word_4: the fourth word of the parent hash of the message.
+// @param block_number: the block number of the message.
+// @param caller_origin_addr: the origin address of the caller.
+// Preconditions
+// The from_address must match the address of the L1 message sender.
+// Postconditions
+// If the optimsitic message is valid, it will be relayed to the L1 headers store without slashing the relayer.
+// Else, the relayer's stake will be slashed and the correct message will be relayed to the L1 headers store.
+// In the case where the message had not been previously optimistically relayed, it will also be forwarded to the L1 headers store.
+//
 @l1_handler
 func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}(
     from_address: felt,
@@ -340,6 +433,7 @@ func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check
             let (relayer_required_stake_amount) = _relayer_required_stake_amount.read();
 
             slash(relayer_stake_asset_addr, relayer_required_stake_amount, caller_origin_addr);
+            // Relay L1 message
             return send_message(
                 contract_addr,
                 block_number,
@@ -360,6 +454,7 @@ func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check
             );
         }
     } else {
+        // Relay L1 message
         return send_message(
             contract_addr,
             block_number,
@@ -371,7 +466,17 @@ func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check
     }
 }
 
-// Requires an external upfront approval of relayer_required_stake_amount
+//
+// This function allows a relayer to stake the required amount of tokens to become eligible to relay L1 messages.
+// @notice Requires an external upfront approval of relayer_required_stake_amount
+// @param relayer_public_key: a felt representing the relayer's public key.
+// Preconditions
+// The contract must be initialized.
+// The relayer must not have already staked tokens (unless it had unstaked or had been slashed).
+// Postconditions
+// The relayer will have staked the required amount of tokens to become eligible to relay L1 messages.
+// The relayer's public key and address will be recorded in the contract.
+//
 @external
 func stake{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}(
     relayer_public_key: felt
@@ -408,6 +513,14 @@ func stake{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}(
     return ();
 }
 
+//
+// This function allows a relayer to unstake their tokens and withdraw them from the contract.
+// Preconditions
+// The relayer must have staked tokens and be the caller of this function.
+// Postconditions
+// The relayer's staked tokens will be transferred to their address.
+// The relayer's public key and address will be cleared from the contract.
+//
 @external
 func unstake{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}() {
     alloc_locals;
@@ -435,6 +548,18 @@ func unstake{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}() 
     return ();
 }
 
+//
+// This function slashes the stake of a relayer and rewards the caller if specified.
+// @param asset_address: the address of the asset to be slashed.
+// @param slash_amount: the amount of the asset to be slashed.
+// @param caller_origin_addr: the address of the caller.
+// If this is not zero, the caller will be rewarded with the slashed tokens.
+// Preconditions
+// The relayer must have staked tokens.
+// Postconditions
+// The relayer's staked tokens will be transferred to either the caller's address (if caller_origin_addr is not zero) or nowhere.
+// The relayer's stake in the contract will be set to zero.
+//
 func slash{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}(
     asset_address: felt, slash_amount: felt, caller_origin_addr: felt
 ) {
@@ -458,6 +583,19 @@ func slash{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}(
     return ();
 }
 
+//
+// This function sends a message with a given parent hash and block number to the next L1 headers store.
+// @param contract_addr: the address of the L1 headers store contract.
+// @param block_number: the block number of the message.
+// @param parent_hash_word_1: the first word of the parent hash of the message.
+// @param parent_hash_word_2: the second word of the parent hash of the message.
+// @param parent_hash_word_3: the third word of the parent hash of the message.
+// @param parent_hash_word_4: the fourth word of the parent hash of the message.
+// Preconditions
+// The parent hash must have 4 words.
+// Postconditions
+// The message will be sent to the L1 headers store.
+//
 func send_message{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}(
     contract_addr: felt,
     block_number: felt,

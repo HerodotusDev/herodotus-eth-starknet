@@ -33,15 +33,17 @@ func accumulator_update(
 ) {
 }
 
-// Temporary auth var for authenticating mocked L1 handlers
+// Temporary auth var for authenticating mocked L1 handlers.
 @storage_var
 func _l1_messages_origin() -> (res: felt) {
 }
 
+// Stores the latest commited L1 block.
 @storage_var
 func _commitments_latest_l1_block() -> (res: felt) {
 }
 
+// Stores the underlying parent hash of a given block nunber.
 @storage_var
 func _commitments_block_parent_hash(block_number: felt) -> (res: Keccak256Hash) {
 }
@@ -50,6 +52,7 @@ func _commitments_block_parent_hash(block_number: felt) -> (res: Keccak256Hash) 
 //                   VIEW FUNCTIONS
 //###################################################
 
+// Returns the Keccak hash of a given block number (if known).
 @view
 func get_commitments_parent_hash{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     block_number: felt
@@ -57,6 +60,7 @@ func get_commitments_parent_hash{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*,
     return _commitments_block_parent_hash.read(block_number);
 }
 
+// Returns the latest committed L1 block.
 @view
 func get_latest_commitments_l1_block{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
@@ -72,6 +76,15 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     return ();
 }
 
+//
+// This function should be called from the L1 messages proxy (commitments inbox).
+//  @dev This function saves the parent hash of a given block number in storage and updates the latest known block number if needed.
+//  @notice The caller of this function must be the contract's `l1_messages_origin` in order to have permission to save the parent hash.
+//  If the block number is greater than the latest known block number, the function will update the latest known block number in storage.
+//  @param parent_hash_len The length of the parent hash array.
+//  @param parent_hash The array containing the parent hash.
+//  @param block_number The block number for which to save the parent hash.
+//
 @external
 func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}(
     parent_hash_len: felt, parent_hash: felt*, block_number: felt
@@ -102,6 +115,31 @@ func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check
     return ();
 }
 
+//
+// @dev This function validates the integrity of the parent block and its proof,
+// and updates the Merkle Mountain Range (MMR) with the Pedersen-hashed block's contents.
+//
+// @notice The provided parent block and proof must be valid in order for the function to process the block and update the MMR.
+// If the parent block and proof are valid, the function will update the MMR with the hashed block's contents.
+//
+// @param reference_block_number The reference block number used to retrieve the parent hash for validation (i.e. child block).
+// @param reference_proof_leaf_index The leaf index of the reference proof.
+// @param reference_proof_leaf_value The value of the reference proof.
+// @param reference_proof_len The length of the reference block's proof array.
+// @param reference_proof The array containing the reference block's proof.
+// @param reference_proof_peaks_len The length of the peaks array in the reference block's proof.
+// @param reference_proof_peaks The array containing the peaks in the reference block's proof.
+// @param reference_header_rlp_bytes_len The length of the reference block header RLP bytes array.
+// @param reference_header_rlp_len The length of the reference block header RLP array.
+// @param reference_header_rlp The array containing the reference block header RLP bytes.
+// @param block_header_rlp_bytes_len The length of the block header RLP bytes array.
+// @param block_header_rlp_len The length of the block header RLP array.
+// @param block_header_rlp The array containing the block header RLP bytes.
+// @param mmr_peaks_len The length of the MMR peaks array.
+// @param mmr_peaks The array containing the MMR peaks.
+// @param inclusion_tx_hash The inclusion transaction hash of the reference block.
+// @param mmr_pos The MMR position at the proof generation time.
+//
 @external
 func process_block{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
@@ -149,6 +187,20 @@ func process_block{
     return ();
 }
 
+//
+// @dev This function validates the given block header RLP bytes
+// and updates the Merkle Mountain Range (MMR) with the block's Pedersen hash.
+//
+// @notice The provided block header RLP bytes must match the parent hash of the reference block number in order to be valid.
+// If the provided block header RLP bytes are valid, the function will update the MMR with the hashed block's contents.
+//
+// @param reference_block_number The reference block number used to retrieve the parent hash for validation (i.e. child block).
+// @param block_header_rlp_bytes_len The length of the block header RLP bytes array.
+// @param block_header_rlp_len The length of the block header RLP array.
+// @param block_header_rlp The array containing the block header RLP bytes (i.e. parent block).
+// @param mmr_peaks_len The length of the MMR peaks array.
+// @param mmr_peaks The array containing the MMR peaks.
+//
 @external
 func process_block_from_message{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
@@ -176,6 +228,7 @@ func process_block_from_message{
     return ();
 }
 
+// See `process_block`, similar but recursively process multiple blocks instead of a single one.
 @external
 func process_till_block{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
@@ -258,6 +311,11 @@ func process_till_block{
     return ();
 }
 
+//
+// @dev This function gets the last position in the MMR tree.
+// @notice This function calls the `mmr_get_last_pos` function to get the last position in the MMR tree.
+// @return The last position in the MMR tree.
+//
 @external
 func get_mmr_last_pos{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
     res: felt
@@ -266,6 +324,18 @@ func get_mmr_last_pos{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
     return (res=last_pos);
 }
 
+//
+// @dev This function verifies the past proof of a block in the MMR tree.
+// @notice This function calls the `mmr_verify_past_proof` function to verify the past proof of a block in the MMR tree.
+// @param index The leaf index of the block in the proof.
+// @param value The value of the block's leaf in the proof.
+// @param proof_len The length of the proof array.
+// @param proof The array containing the proof.
+// @param peaks_len The length of the peaks array in the proof.
+// @param peaks The array containing the peaks in the proof.
+// @param inclusion_tx_hash The inclusion transaction hash of the block.
+// @param mmr_pos The MMR position of the block.
+//
 @external
 func call_mmr_verify_past_proof{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     index: felt,
@@ -283,6 +353,12 @@ func call_mmr_verify_past_proof{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, 
     return ();
 }
 
+//
+// @dev This function gets the root of a given inclusion transaction hash of a block in the MMR tree.
+// @notice This function calls the mmr_get_inclusion_tx_hash_to_root function.
+// @param tx_hash The transaction hash of the block.
+// @return The MMR root right after the block inclusion.
+//
 @external
 func call_get_inclusion_tx_hash_to_root{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
@@ -291,6 +367,20 @@ func call_get_inclusion_tx_hash_to_root{
     return (res=res);
 }
 
+//
+// @dev This function validates the parent block of a given child block
+// by checking that the parent block's RLP bytes match the child block's parent hash.
+//
+// @notice The provided child and parent block header RLP bytes must be valid and the parent block's RLP bytes
+// must match the child block's parent hash in order for the function to consider the parent block valid.
+//
+// @param child_header_rlp_bytes_len The length of the child block header RLP bytes array.
+// @param child_header_rlp_len The length of the child block header RLP array.
+// @param child_header_rlp The array containing the child block header RLP bytes.
+// @param parent_header_rlp_bytes_len The length of the parent block header RLP bytes array.
+// @param parent_header_rlp_len The length of the parent block header RLP array.
+// @param parent_header_rlp The array containing the parent block header RLP bytes.
+//
 func validate_parent_block{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(
@@ -318,6 +408,29 @@ func validate_parent_block{
     return ();
 }
 
+//
+// @dev This function validates the integrity of a parent block and its proof
+// by verifying the past proof and checking that the parent block's RLP bytes match the child block's parent hash.
+//
+// @notice The provided parent block, proof, and child block header RLP bytes must be valid, and the parent block's RLP bytes must match the child block's parent hash
+// in order for the function to consider the parent block and proof valid.
+//
+// @param reference_proof_leaf_index The leaf index of the reference proof.
+// @param reference_proof_leaf_value The value of the reference proof.
+// @param reference_proof_len The length of the reference block's proof array.
+// @param reference_proof The array containing the reference block's proof.
+// @param reference_proof_peaks The array containing the peaks in the reference block's proof.
+// @param reference_proof_peaks_len The length of the peaks array in the reference block's proof.
+// @param reference_proof_peaks The array containing the peaks in the reference block's proof.
+// @param reference_header_rlp_bytes_len The length of the reference block header RLP bytes array.
+// @param reference_header_rlp_len The length of the reference block header RLP array.
+// @param reference_header_rlp The array containing the reference block.
+// @param block_header_rlp_bytes_len The length of the block header RLP bytes array.
+// @param block_header_rlp_len The length of the block header RLP array.
+// @param block_header_rlp The array containing the block header RLP bytes.
+// @param inclusion_tx_hash The inclusion transaction hash of the block.
+// @param mmr_pos The MMR position at the proof generation time.
+//
 func validate_parent_block_and_proof_integrity{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(
@@ -363,6 +476,16 @@ func validate_parent_block_and_proof_integrity{
     return ();
 }
 
+//
+// @dev This function updates the MMR tree with a new block.
+// @notice This function computes the Pedersen hash of the given block and appends it to the MMR tree.
+// It then emits the `AccumulatorUpdate` event with the processed block number, the Pedersen hash, and the Keccak256 hash of the block.
+// @param block_header_rlp_bytes_len The length of the block header RLP in bytes.
+// @param block_header_rlp_len The length of the block header RLP in felts.
+// @param block_header_rlp The block header RLP.
+// @param mmr_peaks_len The length of the MMR peaks array.
+// @param mmr_peaks The array of MMR peaks.
+//
 func update_mmr{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(
@@ -399,6 +522,9 @@ func update_mmr{
     return ();
 }
 
+//
+// This internal function uses recursion to process blocks until it reaches the last block.
+//
 func process_till_block_rec{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(
@@ -490,6 +616,12 @@ func process_till_block_rec{
     );
 }
 
+//
+// This internal function calculates the Keccak256 hash of the provided RLP-encoded bytes
+// and compares this hash to the parent hash of the child block provided as input.
+// @notice If the two hashes do not match, the function raises an error.
+// @dev Otherwise, it returns without producing any output.
+//
 func validate_provided_header_rlp{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(
