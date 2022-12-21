@@ -1,17 +1,23 @@
 %lang starknet
-%builtins pedersen range_check ecdsa bitwise
+%builtins pedersen range_check bitwise
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
 
-from lib.types import Keccak256Hash, IntsSequence, StorageSlot, reconstruct_ints_sequence_list
+from lib.types import (
+    Keccak256Hash,
+    IntsSequence,
+    StorageSlot,
+    reconstruct_ints_sequence_list,
+    RLPItem,
+)
 from lib.blockheader_rlp_extractor import decode_transactions_root
 from lib.extract_from_rlp import getElement
 from lib.trie_proofs import verify_proof
 
 //###################################################
-//        OTHERS CONTRACTS INTERFACES
+//        CONTRACTS INTERFACES
 //###################################################
 
 @contract_interface
@@ -42,7 +48,7 @@ func _l1_headers_store_addr() -> (res: felt) {
 
 // Stores the Starknet state roots.
 @storage_var
-func _state_roots() -> (res: Keccak256Hash) {
+func _state_roots(block_number: felt) -> (res: Keccak256Hash) {
 }
 
 //###################################################
@@ -70,7 +76,9 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 // and stores it in the contract's storage.
 //
 @external
-func process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+func process_state_root{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(
     l1_inclusion_header_leaf_index: felt,
     l1_inclusion_header_leaf_value: felt,
     l1_inclusion_header_proof_len: felt,
@@ -82,7 +90,9 @@ func process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
     l1_inclusion_header_rlp_len: felt,
     l1_inclusion_header_rlp: felt*,
     l1_inclusion_header_rlp_bytes_len: felt,
-    slot: StorageSlot,
+    path_size_bytes: felt,
+    path_len: felt,
+    path: felt*,
     transaction_inclusion_proof_sizes_bytes_len: felt,
     transaction_inclusion_proof_sizes_bytes: felt*,
     transaction_inclusion_proof_sizes_words_len: felt,
@@ -90,6 +100,7 @@ func process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
     transaction_inclusion_proofs_concat_len: felt,
     transaction_inclusion_proofs_concat: felt*,
 ) {
+    alloc_locals;
     let (local headers_store_addr) = _l1_headers_store_addr.read();
 
     // Verify the header inclusion in the headers store's MMR.
@@ -106,22 +117,15 @@ func process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
     );
 
     local input: IntsSequence = IntsSequence(l1_inclusion_header_rlp, l1_inclusion_header_rlp_len, l1_inclusion_header_rlp_bytes_len);
-    let (local transactions_root: felt*) = decode_transactions_root(input);
+    let (local transactions_root: Keccak256Hash) = decode_transactions_root(input);
+    let (root: felt*) = alloc();
+    assert root[0] = transactions_root.word_1;
+    assert root[1] = transactions_root.word_2;
+    assert root[2] = transactions_root.word_3;
+    assert root[3] = transactions_root.word_4;
 
     // Form the keccak256 hash of the tree root.
-    local state_root: IntsSequence = IntsSequence(transactions_root, 0, 0);
-
-    // Find the path of the storage slot.
-    let (local slot_raw) = alloc();
-    assert slot_raw[0] = slot.word_1;
-    assert slot_raw[1] = slot.word_2;
-    assert slot_raw[2] = slot.word_3;
-    assert slot_raw[3] = slot.word_4;
-    local slot_ints_sequence: IntsSequence = IntsSequence(slot_raw, 4, 32);
-    let (local keccak_ptr: felt*) = alloc();
-    let (local path_raw) = keccak256{keccak_ptr=keccak_ptr}(slot_ints_sequence);
-    local path: IntsSequence = IntsSequence(path_raw, 4, 32);
-
+    local state_root: IntsSequence = IntsSequence(root, 4, 32);
     // Format the proof to the expected data type.
     let (local transaction_inclusion_proof: IntsSequence*) = alloc();
     reconstruct_ints_sequence_list(
@@ -136,17 +140,36 @@ func process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
         0,
         0,
     );
-    let (local tx_info_rlp: IntsSequence) = verify_proof(
-        path, state_root, transaction_inclusion_proof, transaction_inclusion_proof_sizes_bytes_len
-    );
+    local path_arg: IntsSequence = IntsSequence(path, path_len, path_size_bytes);
+    local root_hash_size_bytes;
+    local root_hash_len;
+    let (root_hash: felt*) = alloc();
+    %{
+        # This hint is a temporary substitute, it can be replaced by the actual txns root once we've got the correct mocked daata.
 
+        from utils.types import Data
+        txns_root = Data.from_hex('0x199c2e6b850bcc9beaea25bf1bacc5741a7aad954d28af9b23f4b53f5404937b')
+        txns_root_values = txns_root.to_ints().values
+        segments.write_arg(ids.root_hash, txns_root_values)
+        ids.root_hash_len = len(txns_root_values)
+        ids.root_hash_size_bytes = txns_root.to_ints().length
+    %}
+    local root_hash_arg: IntsSequence = IntsSequence(root_hash, root_hash_len, root_hash_size_bytes);
+
+    let (local tx_info_rlp: IntsSequence) = verify_proof(
+        path_arg,
+        root_hash_arg,
+        transaction_inclusion_proof,
+        transaction_inclusion_proof_sizes_bytes_len,
+    );
     // Extract and decode calldata from tx_info_rlp.
+    // TODO: find a way to extract the calldata elements correctly
     let (tx_calldata: RLPItem) = getElement{range_check_ptr=range_check_ptr}(tx_info_rlp, 4);
-    let starknet_block_number = tx_calldata[0];
-    let starknet_state_root = tx_calldata[1];
+    // let starknet_block_number = tx_calldata[0];
+    // let starknet_state_root = tx_calldata[1];
 
     // TODO: use an MMR instead (?)
     // Store the state root of the block into this contract storage.
-    _state_roots.write(starknet_block_number, starknet_state_root);
+    // _state_roots.write(starknet_block_number, starknet_state_root);
     return ();
 }
