@@ -13,7 +13,7 @@ from lib.types import (
     RLPItem,
 )
 from lib.blockheader_rlp_extractor import decode_transactions_root
-from lib.extract_from_rlp import getElement
+from lib.extract_from_rlp import getElement, to_list, extract_data
 from lib.trie_proofs import verify_proof
 
 //###################################################
@@ -125,7 +125,7 @@ func process_state_root{
     assert root[3] = transactions_root.word_4;
 
     // Form the keccak256 hash of the tree root.
-    local state_root: IntsSequence = IntsSequence(root, 4, 32);
+    local txns_root: IntsSequence = IntsSequence(root, 4, 32);
     // Format the proof to the expected data type.
     let (local transaction_inclusion_proof: IntsSequence*) = alloc();
     reconstruct_ints_sequence_list(
@@ -145,10 +145,10 @@ func process_state_root{
     local root_hash_len;
     let (root_hash: felt*) = alloc();
     %{
-        # This hint is a temporary substitute, it can be replaced by the actual txns root once we've got the correct mocked daata.
+        # This hint is a temporary substitute, it can be replaced by the actual txns root once we've got the correct mocked data.
 
         from utils.types import Data
-        txns_root = Data.from_hex('0x199c2e6b850bcc9beaea25bf1bacc5741a7aad954d28af9b23f4b53f5404937b')
+        txns_root = Data.from_hex('0xe20b1a067dd449c4bc6650c14c53fb040949926c12024c6f8590b004aec28ba6')
         txns_root_values = txns_root.to_ints().values
         segments.write_arg(ids.root_hash, txns_root_values)
         ids.root_hash_len = len(txns_root_values)
@@ -156,15 +156,23 @@ func process_state_root{
     %}
     local root_hash_arg: IntsSequence = IntsSequence(root_hash, root_hash_len, root_hash_size_bytes);
 
+    %{ print('verifying the proof...') %}
     let (local tx_info_rlp: IntsSequence) = verify_proof(
         path_arg,
         root_hash_arg,
         transaction_inclusion_proof,
         transaction_inclusion_proof_sizes_bytes_len,
     );
+    %{ print('proof ok, tx_info_rlp', ids.tx_info_rlp) %}
     // Extract and decode calldata from tx_info_rlp.
     // TODO: find a way to extract the calldata elements correctly
-    let (tx_calldata: RLPItem) = getElement{range_check_ptr=range_check_ptr}(tx_info_rlp, 4);
+    // let (tx_calldata: RLPItem) = getElement{range_check_ptr=range_check_ptr}(tx_info_rlp, 4);
+    let (local list: RLPItem*, list_len) = to_list(tx_info_rlp);
+    %{ print('items len', ids.list_len) %}
+
+    let (local res: IntsSequence) = extract_data(list[0].dataPosition, list[0].length, tx_info_rlp);
+    local nonce = res.element[0];
+    %{ print('decoded nonce', ids.nonce) %}
     // let starknet_block_number = tx_calldata[0];
     // let starknet_state_root = tx_calldata[1];
 

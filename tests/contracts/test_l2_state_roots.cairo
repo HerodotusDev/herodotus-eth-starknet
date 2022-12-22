@@ -204,9 +204,9 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         from utils.helpers import IntsSequence
         from rlp import encode
 
-        account_state_root = Data.from_hex('0x199c2e6b850bcc9beaea25bf1bacc5741a7aad954d28af9b23f4b53f5404937b')
-        proof_path = Data.from_hex(Web3.keccak(hexstr=trie_proofs[2]['storageProof'][0]['key']).hex())
-        proof = list(map(lambda element: Data.from_hex(element).to_ints(), trie_proofs[2]['storageProof'][0]['proof']))
+        txns_root = Data.from_hex('0xe20b1a067dd449c4bc6650c14c53fb040949926c12024c6f8590b004aec28ba6')
+        proof_path = proof_path = Data.from_hex("0x" + encode(Data.from_hex(trie_proofs[3]['transactionIndex']).to_bytes()).hex())
+        proof = list(map(lambda element: Data.from_hex(element).to_ints(), trie_proofs[3]['txProof']))
 
         flat_proof = []
         flat_proof_sizes_bytes = []
@@ -221,10 +221,11 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         ids.path_len = len(path_values)
         ids.path_size_bytes = proof_path.to_ints().length
 
-        account_state_root_values = account_state_root.to_ints().values
-        segments.write_arg(ids.root_hash, account_state_root_values)
-        ids.root_hash_len = len(account_state_root_values)
-        ids.root_hash_size_bytes = account_state_root.to_ints().length
+        txns_root_values = txns_root.to_ints().values
+        segments.write_arg(ids.root_hash, txns_root_values)
+        ids.root_hash_len = len(txns_root_values)
+        ids.root_hash_size_bytes = txns_root.to_ints().length
+
         ids.proof_sizes_bytes_len = len(flat_proof_sizes_bytes)
         segments.write_arg(ids.proof_sizes_bytes, flat_proof_sizes_bytes)
         ids.proof_sizes_words_len = len(flat_proof_sizes_words)
