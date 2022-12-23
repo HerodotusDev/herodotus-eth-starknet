@@ -5,7 +5,9 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
+
 from lib.bitshift import bitshift_right, bitshift_left
+from lib.words64 import extract_byte
 
 
 from lib.types import (
@@ -155,34 +157,46 @@ func process_state_root{
         transaction_inclusion_proof_sizes_bytes_len,
     );
 
-    local leaf_size_bytes: felt = tx_tree_leaf.element_size_bytes;
-    local leaf_size_words: felt = tx_tree_leaf.element_size_words;
-    local leaf_values: felt* = tx_tree_leaf.element;
+    let (local valid_rlp: IntsSequence) = remove_leading_byte(tx_tree_leaf);
 
-    local word_to_manipulate: felt = tx_tree_leaf.element[0];
-    let (local left_shifted: felt) = bitshift_left(word_to_manipulate, 8);
-    let (local right_shifted: felt) = bitshift_right(left_shifted, 8);
+    local valid_rlp_size_words = valid_rlp.element_size_words;
+    local valid_rlp_size_bytes = valid_rlp.element_size_bytes;
+    local valid_rlp_values: felt* = valid_rlp.element;
 
-    let (local tx_rlp_values: felt*) = alloc();
+    // %{  
+    //     from utils.types import Data, IntsSequence 
+    //     leaf_values = memory.get_range(ids.valid_rlp_values, ids.valid_rlp_size_words)
+    //     print("Leaf values hex: ", list(map(lambda x: hex(x), leaf_values)))
+    //     leaf = Data.from_ints(IntsSequence(leaf_values, ids.valid_rlp_size_bytes))
+    //     print('leaf updated', leaf.to_hex())
+    // %}
 
-    assert tx_rlp_values[0] = right_shifted;
-    memcpy(tx_rlp_values + 1, tx_tree_leaf.element + 1, tx_tree_leaf.element_size_words - 1);
+    let (local list: RLPItem*, list_len) = to_list(valid_rlp);
 
-    %{  
+    let (local calldata: IntsSequence) = extract_data(list[7].dataPosition, list[7].length, valid_rlp);
+    
+    local calldata_size_words = calldata.element_size_words;
+    local calldata_size_bytes = calldata.element_size_bytes;
+    local calldata_elements: felt* = calldata.element;
+    %{
         from utils.types import Data, IntsSequence 
-        leaf_values = memory.get_range(ids.tx_rlp_values, ids.leaf_size_words)
-        print("Leaf values hex: ", list(map(lambda x: hex(x), leaf_values)))
-        leaf = Data.from_ints(IntsSequence(leaf_values, ids.leaf_size_bytes))
-        print('leaf updated', leaf.to_hex())
+        calldata_values = memory.get_range(ids.calldata_elements, ids.calldata_size_words)
+        print("Decoded calldata: ", calldata_values)
     %}
 
-    local tx_rlp: IntsSequence = IntsSequence(tx_rlp_values, tx_tree_leaf.element_size_words, tx_tree_leaf.element_size_bytes);
-    // Ok, I know. Essentially right now the first word has 7 bytes, where it should be 8 by borrowing a byte from the next word
-    // Supposably tx_rlp is not a list
-    let (local list: RLPItem*, list_len) = to_list(tx_rlp);
-    %{ print('items len', ids.list_len) %}
+    local state_root_calldata_section_1 = calldata_elements[20]; // 2nd half of the word is already the state root
+    local state_root_calldata_section_2 = calldata_elements[21]; // Whole word
+    local state_root_calldata_section_3 = calldata_elements[22]; // Whole word
+    local state_root_calldata_section_4 = calldata_elements[23]; // Whole word
+    local state_root_calldata_section_5 = calldata_elements[24]; // 1st half of the worl belongs to the state root
 
-    // let (local res: IntsSequence) = extract_data(list[0].dataPosition, list[0].length, tx_info_rlp);
+    %{
+        from utils.types import Data, IntsSequence 
+        state_root_words = [ids.starknet_state_root_word_1, ids.starknet_state_root_word_2, ids.starknet_state_root_word_3, ids.starknet_state_root_word_4] 
+        state_root = Data.from_ints(IntsSequence(state_root_words, 32))
+        print("State root: ", state_root)
+    %}
+
     // local tx_type = res.element[0];
     // %{ print('Tx type', ids.tx_type) %}
     // // let starknet_block_number = tx_calldata[0];
@@ -194,9 +208,50 @@ func process_state_root{
     return ();
 }
 
-func parse_eip1559_tx_leaf{
+func remove_leading_byte{
     pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
-}(leaf: IntsSequence) -> (rlp_element: IntsSequence) {
-    
+}(input: IntsSequence) -> (res: IntsSequence) {
+    alloc_locals;
+    let (local dst: felt*) = alloc();
+    let (local dst_len) = remove_leading_byte_rec(input, dst, 0, 0);
+    local no_leading_byte: IntsSequence = IntsSequence(dst, dst_len, input.element_size_bytes - 1);
+    return (no_leading_byte, );
 }
+
+// TODO inspect: for some reason we loose the last nibble
+func remove_leading_byte_rec{
+    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(  
+    input: IntsSequence,
+    acc: felt*,
+    acc_len: felt,
+    current_index: felt) -> (felt) {
+    alloc_locals;
+    if(acc_len == input.element_size_words) {
+        return(acc_len, );
+    }
+
+    let (local current_word_left_shifted) = bitshift_left(input.element[current_index], 8);
+
+    local new_word;
+
+    if(current_index != input.element_size_words - 1) {
+        local next_word_cpy = input.element[current_index + 1];
+        let (local next_word_first_byte) = extract_byte(next_word_cpy, 8, 0);
+        new_word = current_word_left_shifted + next_word_first_byte;
+    } else {
+        let (local last_word) = bitshift_right(current_word_left_shifted, 8);
+        new_word = last_word;
+    }
+
+    assert acc[current_index] = new_word;
+
+    return remove_leading_byte_rec(
+        input=input,
+        acc=acc,
+        acc_len=acc_len + 1,
+        current_index=current_index + 1);
+}
+
+
 
