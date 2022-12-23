@@ -159,10 +159,9 @@ func process_state_root{
 
     let (local valid_rlp: IntsSequence) = remove_leading_byte(tx_tree_leaf);
 
-    local valid_rlp_size_words = valid_rlp.element_size_words;
-    local valid_rlp_size_bytes = valid_rlp.element_size_bytes;
-    local valid_rlp_values: felt* = valid_rlp.element;
-
+    // local valid_rlp_size_words = valid_rlp.element_size_words;
+    // local valid_rlp_size_bytes = valid_rlp.element_size_bytes;
+    // local valid_rlp_values: felt* = valid_rlp.element;
     // %{  
     //     from utils.types import Data, IntsSequence 
     //     leaf_values = memory.get_range(ids.valid_rlp_values, ids.valid_rlp_size_words)
@@ -174,25 +173,14 @@ func process_state_root{
     let (local list: RLPItem*, list_len) = to_list(valid_rlp);
 
     let (local calldata: IntsSequence) = extract_data(list[7].dataPosition, list[7].length, valid_rlp);
-    
-    local calldata_size_words = calldata.element_size_words;
-    local calldata_size_bytes = calldata.element_size_bytes;
-    local calldata_elements: felt* = calldata.element;
-    %{
-        from utils.types import Data, IntsSequence 
-        calldata_values = memory.get_range(ids.calldata_elements, ids.calldata_size_words)
-        print("Decoded calldata: ", calldata_values)
-    %}
+    let (local state_root: IntsSequence) = decode_state_root_from_calldata(calldata);
 
-    local state_root_calldata_section_1 = calldata_elements[20]; // 2nd half of the word is already the state root
-    local state_root_calldata_section_2 = calldata_elements[21]; // Whole word
-    local state_root_calldata_section_3 = calldata_elements[22]; // Whole word
-    local state_root_calldata_section_4 = calldata_elements[23]; // Whole word
-    local state_root_calldata_section_5 = calldata_elements[24]; // 1st half of the worl belongs to the state root
+    local state_root_raw: felt* = state_root.element;
 
     %{
+        print("............")
         from utils.types import Data, IntsSequence 
-        state_root_words = [ids.starknet_state_root_word_1, ids.starknet_state_root_word_2, ids.starknet_state_root_word_3, ids.starknet_state_root_word_4] 
+        state_root_words = memory.get_range(ids.state_root_raw, 4)
         state_root = Data.from_ints(IntsSequence(state_root_words, 32))
         print("State root: ", state_root)
     %}
@@ -206,6 +194,43 @@ func process_state_root{
     // // Store the state root of the block into this contract storage.
     // // _state_roots.write(starknet_block_number, starknet_state_root);
     return ();
+}
+
+func decode_state_root_from_calldata{
+    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(calldata: IntsSequence) -> (state_root: IntsSequence) {
+    alloc_locals;
+    local state_root_calldata_section_1 = calldata.element[20]; // 2nd half of the word is already the state root
+    local state_root_calldata_section_2 = calldata.element[21]; // Whole word
+    local state_root_calldata_section_3 = calldata.element[22]; // Whole word
+    local state_root_calldata_section_4 = calldata.element[23]; // Whole word
+    local state_root_calldata_section_5 = calldata.element[24]; // 1st half of the worl belongs to the state root
+
+    let (local word_1_head) = bitshift_left(state_root_calldata_section_1, 32);
+    let (local word_1_tail) = bitshift_right(state_root_calldata_section_2, 32);
+    local state_root_word_1 = word_1_head + word_1_tail;
+
+    let (local word_2_head) = bitshift_left(state_root_calldata_section_2, 32);
+    let (local word_2_tail) = bitshift_right(state_root_calldata_section_3, 32);
+    local state_root_word_2 = word_2_head + word_2_tail;
+
+    let (local word_3_head) = bitshift_left(state_root_calldata_section_3, 32);
+    let (local word_3_tail) = bitshift_right(state_root_calldata_section_4, 32);
+    local state_root_word_3 = word_3_head + word_3_tail;
+
+    let (local word_4_head) = bitshift_left(state_root_calldata_section_4, 32);
+    let (local word_4_tail) = bitshift_right(state_root_calldata_section_5, 32);
+    local state_root_word_4 = word_4_head + word_4_tail;
+
+    let (local state_root_elements: felt*) = alloc();
+
+    assert state_root_elements[0] = state_root_word_1;
+    assert state_root_elements[1] = state_root_word_2;
+    assert state_root_elements[2] = state_root_word_3;
+    assert state_root_elements[3] = state_root_word_4;
+
+    local state_root: IntsSequence = IntsSequence(state_root_elements, 4, 32);
+    return (state_root, );
 }
 
 func remove_leading_byte{
