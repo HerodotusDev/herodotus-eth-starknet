@@ -102,6 +102,9 @@ func process_state_root{
 ) {
     alloc_locals;
     let (local headers_store_addr) = _l1_headers_store_addr.read();
+    %{
+        print("verifying mmr")
+    %}
 
     // Verify the header inclusion in the headers store's MMR.
     IL1HeadersStore.call_mmr_verify_past_proof(
@@ -115,6 +118,10 @@ func process_state_root{
         inclusion_tx_hash=mmr_inclusion_header_inclusion_tx_hash,
         mmr_pos=mmr_inclusion_header_pos,
     );
+
+        %{
+        print("verified mmr")
+    %}
 
     local block_header: IntsSequence = IntsSequence(l1_header_rlp, l1_header_rlp_len, l1_header_rlp_bytes_len);
     let (local decoded_root: Keccak256Hash) = decode_transactions_root(block_header);
@@ -145,13 +152,27 @@ func process_state_root{
 
     local path_arg: IntsSequence = IntsSequence(path, path_len, path_size_bytes);
 
-    %{ print('verifying the proof...') %}
+    %{ print('verifying the mpt proof...') %}
     let (local tx_info_rlp: IntsSequence) = verify_proof(
         path_arg,
         txns_root,
         transaction_inclusion_proof,
         transaction_inclusion_proof_sizes_bytes_len,
     );
+
+    %{ print('verified the mpt proof...') %}
+
+    local leaf_size_bytes: felt = tx_info_rlp.element_size_bytes;
+    local leaf_size_words: felt = tx_info_rlp.element_size_words;
+    local leaf_values: felt* = tx_info_rlp.element;
+
+    %{  
+        from utils.types import Data, IntsSequence 
+        leaf_values = memory.get_range(ids.leaf_values, ids.leaf_size_words)
+        leaf = Data.from_ints(IntsSequence(leaf_values, ids.leaf_size_bytes))
+        print('leaf ', leaf.to_hex())
+    %}
+
 
     // Extract and decode calldata from tx_info_rlp.
     // TODO: find a way to extract the calldata elements correctly
