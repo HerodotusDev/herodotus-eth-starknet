@@ -172,17 +172,24 @@ func process_state_root{
 
     let (local list: RLPItem*, list_len) = to_list(valid_rlp);
 
+    let (local recipient: IntsSequence) = extract_data(list[5].dataPosition, list[5].length, valid_rlp);
+
+    // Goerli L2 contract 0xde29d060d45901fb19ed6c6e959eb22d8626708e
+    assert recipient.element[0] = 0xde29d060d45901fb;
+    assert recipient.element[1] = 0x19ed6c6e959eb22d;
+    assert recipient.element[2] = 0x000000008626708e;
+
     let (local calldata: IntsSequence) = extract_data(list[7].dataPosition, list[7].length, valid_rlp);
     let (local state_root: IntsSequence) = decode_state_root_from_calldata(calldata);
+    let (local block_number) = decode_block_number_from_calldata(calldata);
 
     local state_root_raw: felt* = state_root.element;
-
     %{
-        print("............")
         from utils.types import Data, IntsSequence 
         state_root_words = memory.get_range(ids.state_root_raw, 4)
         state_root = Data.from_ints(IntsSequence(state_root_words, 32))
         print("State root: ", state_root)
+        print("Block number: ", ids.block_number)
     %}
 
     // local tx_type = res.element[0];
@@ -194,6 +201,15 @@ func process_state_root{
     // // Store the state root of the block into this contract storage.
     // // _state_roots.write(starknet_block_number, starknet_state_root);
     return ();
+}
+
+func decode_block_number_from_calldata{
+    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(calldata: IntsSequence) -> (block_number: felt) {
+    alloc_locals;
+    local block_number_calldata_section = calldata.element[28]; // 1st half of the worl belongs to the state root
+    let (local block_number) = bitshift_right(block_number_calldata_section, 8 * 4);
+    return (block_number, );
 }
 
 func decode_state_root_from_calldata{
