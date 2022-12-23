@@ -7,6 +7,22 @@ from lib.bitshift import bitshift_right, bitshift_left
 from lib.types import IntsSequence
 from starkware.cairo.common.pow import pow
 
+func extract_byte{range_check_ptr}(word: felt, word_len_bytes: felt, position: felt) -> (
+    res: felt
+) {
+    alloc_locals;
+    assert_le(position, word_len_bytes - 1);  // Ensures that the extracted byte is not out of word range
+    local tailcut_shift = (word_len_bytes - 1 - position) * 8;
+    let (local removed_tail) = bitshift_right(word, tailcut_shift); 
+    local headcut_shift = (word_len_bytes - position) * 8;
+    if (headcut_shift == 64) {
+        return (removed_tail,);
+    }
+    let (local removed_head) = bitshift_left(removed_tail, 56);
+    let (local removed_zeros) = bitshift_right(removed_head, 56);
+    return (removed_zeros,);
+}
+
 func extract_nibble{range_check_ptr}(word: felt, word_len_bytes: felt, position: felt) -> (
     res: felt
 ) {
