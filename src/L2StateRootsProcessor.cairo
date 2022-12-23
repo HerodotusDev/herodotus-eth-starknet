@@ -79,17 +79,17 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 func process_state_root{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(
-    l1_inclusion_header_leaf_index: felt,
-    l1_inclusion_header_leaf_value: felt,
-    l1_inclusion_header_proof_len: felt,
-    l1_inclusion_header_proof: felt*,
-    l1_inclusion_header_peaks_len: felt,
-    l1_inclusion_header_peaks: felt*,
-    l1_inclusion_header_inclusion_tx_hash: felt,
-    l1_inclusion_header_mmr_pos: felt,
-    l1_inclusion_header_rlp_len: felt,
-    l1_inclusion_header_rlp: felt*,
-    l1_inclusion_header_rlp_bytes_len: felt,
+    mmr_inclusion_header_leaf_index: felt,
+    mmr_inclusion_header_leaf_value: felt,
+    mmr_inclusion_header_proof_len: felt,
+    mmr_inclusion_header_proof: felt*,
+    mmr_inclusion_header_peaks_len: felt,
+    mmr_inclusion_header_peaks: felt*,
+    mmr_inclusion_header_inclusion_tx_hash: felt,
+    mmr_inclusion_header_pos: felt,
+    l1_header_rlp_len: felt,
+    l1_header_rlp: felt*,
+    l1_header_rlp_bytes_len: felt,
     path_size_bytes: felt,
     path_len: felt,
     path: felt*,
@@ -106,26 +106,28 @@ func process_state_root{
     // Verify the header inclusion in the headers store's MMR.
     IL1HeadersStore.call_mmr_verify_past_proof(
         contract_address=headers_store_addr,
-        index=l1_inclusion_header_leaf_index,
-        value=l1_inclusion_header_leaf_value,
-        proof_len=l1_inclusion_header_proof_len,
-        proof=l1_inclusion_header_proof,
-        peaks_len=l1_inclusion_header_peaks_len,
-        peaks=l1_inclusion_header_peaks,
-        inclusion_tx_hash=l1_inclusion_header_inclusion_tx_hash,
-        mmr_pos=l1_inclusion_header_mmr_pos,
+        index=mmr_inclusion_header_leaf_index,
+        value=mmr_inclusion_header_leaf_value,
+        proof_len=mmr_inclusion_header_proof_len,
+        proof=mmr_inclusion_header_proof,
+        peaks_len=mmr_inclusion_header_peaks_len,
+        peaks=mmr_inclusion_header_peaks,
+        inclusion_tx_hash=mmr_inclusion_header_inclusion_tx_hash,
+        mmr_pos=mmr_inclusion_header_pos,
     );
 
-    local input: IntsSequence = IntsSequence(l1_inclusion_header_rlp, l1_inclusion_header_rlp_len, l1_inclusion_header_rlp_bytes_len);
-    let (local transactions_root: Keccak256Hash) = decode_transactions_root(input);
-    let (root: felt*) = alloc();
-    assert root[0] = transactions_root.word_1;
-    assert root[1] = transactions_root.word_2;
-    assert root[2] = transactions_root.word_3;
-    assert root[3] = transactions_root.word_4;
+    local block_header: IntsSequence = IntsSequence(l1_header_rlp, l1_header_rlp_len, l1_header_rlp_bytes_len);
+    let (local decoded_root: Keccak256Hash) = decode_transactions_root(block_header);
+
+    let (root_words: felt*) = alloc();
+    assert root_words[0] = decoded_root.word_1;
+    assert root_words[1] = decoded_root.word_2;
+    assert root_words[2] = decoded_root.word_3;
+    assert root_words[3] = decoded_root.word_4;
 
     // Form the keccak256 hash of the tree root.
-    local txns_root: IntsSequence = IntsSequence(root, 4, 32);
+    local txns_root: IntsSequence = IntsSequence(root_words, 4, 32);
+
     // Format the proof to the expected data type.
     let (local transaction_inclusion_proof: IntsSequence*) = alloc();
     reconstruct_ints_sequence_list(
@@ -140,30 +142,17 @@ func process_state_root{
         0,
         0,
     );
-    local path_arg: IntsSequence = IntsSequence(path, path_len, path_size_bytes);
-    local root_hash_size_bytes;
-    local root_hash_len;
-    let (root_hash: felt*) = alloc();
-    %{
-        # This hint is a temporary substitute, it can be replaced by the actual txns root once we've got the correct mocked data.
 
-        from utils.types import Data
-        txns_root = Data.from_hex('0xe20b1a067dd449c4bc6650c14c53fb040949926c12024c6f8590b004aec28ba6')
-        txns_root_values = txns_root.to_ints().values
-        segments.write_arg(ids.root_hash, txns_root_values)
-        ids.root_hash_len = len(txns_root_values)
-        ids.root_hash_size_bytes = txns_root.to_ints().length
-    %}
-    local root_hash_arg: IntsSequence = IntsSequence(root_hash, root_hash_len, root_hash_size_bytes);
+    local path_arg: IntsSequence = IntsSequence(path, path_len, path_size_bytes);
 
     %{ print('verifying the proof...') %}
     let (local tx_info_rlp: IntsSequence) = verify_proof(
         path_arg,
-        root_hash_arg,
+        txns_root,
         transaction_inclusion_proof,
         transaction_inclusion_proof_sizes_bytes_len,
     );
-    %{ print('proof ok, tx_info_rlp', ids.tx_info_rlp) %}
+
     // Extract and decode calldata from tx_info_rlp.
     // TODO: find a way to extract the calldata elements correctly
     // let (tx_calldata: RLPItem) = getElement{range_check_ptr=range_check_ptr}(tx_info_rlp, 4);
@@ -171,8 +160,8 @@ func process_state_root{
     %{ print('items len', ids.list_len) %}
 
     let (local res: IntsSequence) = extract_data(list[0].dataPosition, list[0].length, tx_info_rlp);
-    local nonce = res.element[0];
-    %{ print('decoded nonce', ids.nonce) %}
+    local tx_type = res.element[0];
+    %{ print('Tx type', ids.tx_type) %}
     // let starknet_block_number = tx_calldata[0];
     // let starknet_state_root = tx_calldata[1];
 

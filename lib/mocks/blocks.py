@@ -1,6 +1,35 @@
 from typing import List
 from web3.types import HexBytes, BlockData
 
+mocked_goerli_blocks: List[BlockData] = [
+    {
+        "author": "0x4d496ccc28058b1d74b7a19541663e21154f9c84",
+        "difficulty": 0,
+        "extraData": HexBytes("0x"),
+        "gasLimit": 30000000,
+        "gasUsed": 19289891,
+        "hash": HexBytes("0xb6cfbc27d9bcbf34784611c420bd3dda19deab46ffaae23a2b9beeaafd548525"),
+        "logsBloom": HexBytes(
+            "0x2d2595cee72876bf02f160d9f7d8222648a96286ab027ef2aa9515303ea15f593076d624a5b9dad6371a245696e58add4dea148c0b12bf8faa758e1ea1ed61729e42127f977235a8fb2816f956fc08a2c665b47a23dcba9e9a09f095fb94a9044aeb58769a60baa1d52bf99000472d00e0600e09859d46532887ed1060da1d5b85e5d93f266d91b6b45864159a9b7bd3d0a99d870228d85f640d907a116040ce3640aa509e426bd18dd0c07de7ae8d25eea0582c7ac59c2820f02e71a6e67aa84c705637682a6b4df72c70d965568e0c47e716bd12ee20b386b3f7e2ad0261f259f5be3f33618b030c98e25bae1908caf66333c842474bc141af0a12d2da115f"
+        ),
+        "miner": "0x4d496ccc28058b1d74b7a19541663e21154f9c84",
+        "mixHash": HexBytes("0xed6845cc1f070730582bb1b2f4f37ed914b99f4a4f94e88c6d66e01efd7b032f"),
+        "nonce": HexBytes("0x0000000000000000"),
+        "number": 8180412,
+        "parentHash": HexBytes("0x863b455c52cf87b1be61aff886cccf83d46661e9cc4bf709601a9386540098be"),
+        "receiptsRoot": HexBytes("0xdb1c5ca2bbd8c1770b059544838acbc03c8100a7dbca1d11a3b341334537c9a2"),
+        "sha3Uncles": HexBytes("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+        "size": 87902,
+        "stateRoot": HexBytes("0x09aaf02a0891e8124ce963a34a5c255f1688e774e566c7bea068864d45bfcc7d"),
+        "totalDifficulty": 10790000,
+        "timestamp": 1671708372,
+        "baseFeePerGas": 5790755,
+        "transactions": [],
+        "transactionsRoot": HexBytes("0x1c85870c7b8be91ea4292e25ccf55cfef56d7041903554b87cbca0f89e3074d4"),
+        "uncles": []
+    }
+]
+
 mocked_blocks: List[BlockData] = [
     {
         "baseFeePerGas": 24,

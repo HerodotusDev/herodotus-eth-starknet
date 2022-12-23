@@ -77,60 +77,69 @@ func init_headers_store{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
     res: felt
 ) {
     alloc_locals;
+
     local l1_headers_store;
     let (parent_hash: felt*) = alloc();
     local block_number;
+
     %{
         from utils.helpers import chunk_bytes_input, bytes_to_int_big, IntsSequence
-        from mocks.blocks import mocked_blocks
+        from mocks.blocks import mocked_goerli_blocks
         from utils.types import Data, Encoding, BlockHeaderIndexes
         from utils.block_header import build_block_header
 
         ids.l1_headers_store = context.l1_headers_store_addr
 
-        block = mocked_blocks[7]
-        block_header = build_block_header(block)
-        block_rlp = Data.from_bytes(block_header.raw_rlp()).to_ints()
+        block_header = mocked_goerli_blocks[0]
+        header_serialized = build_block_header(block_header)
+        header_rlp_ints = Data.from_bytes(header_serialized.raw_rlp()).to_ints()
 
-        block_parent_hash = Data.from_hex("0x62a8a05ef6fcd39a11b2d642d4b7ab177056e1eb4bde4454f67285164ef8ce65")
-        assert block_parent_hash.to_hex() == block_header.hash().hex()
-        parent_hash = block_parent_hash.to_ints(Encoding.BIG).values
+        trusted_parent_hash = Data.from_hex("0xb6cfbc27d9bcbf34784611c420bd3dda19deab46ffaae23a2b9beeaafd548525")
+        assert trusted_parent_hash.to_hex() == header_serialized.hash().hex()
+        
+        parent_hash = trusted_parent_hash.to_ints(Encoding.BIG).values
         segments.write_arg(ids.parent_hash, parent_hash)
-        ids.block_number = mocked_blocks[7]['number'] + 1
+        ids.block_number = mocked_goerli_blocks[0]['number'] + 1
 
         stop_prank_callable = start_prank(context.relayer_pub_key, target_contract_address=context.l1_headers_store_addr)
     %}
+
     L1HeadersStore.receive_from_l1(
         contract_address=l1_headers_store,
         parent_hash_len=4,
         parent_hash=parent_hash,
         block_number=block_number,
     );
+
     %{ stop_prank_callable() %}
+
     local block_header_rlp_bytes_len;
     local block_header_rlp_len;
     let (block_header_rlp: felt*) = alloc();
     local block_number_process_block;
+
     %{
         from utils.types import Data
         from utils.block_header import build_block_header
-        from mocks.blocks import mocked_blocks
-        block = mocked_blocks[7]
-        block_header = build_block_header(block)
-        block_rlp = Data.from_bytes(block_header.raw_rlp()).to_ints()
+        from mocks.blocks import mocked_goerli_blocks
 
-        ids.block_header_rlp_bytes_len = block_rlp.length
-        segments.write_arg(ids.block_header_rlp, block_rlp.values)
-        ids.block_header_rlp_len = len(block_rlp.values)
+        block_header = mocked_goerli_blocks[0]
+        header_serialized = build_block_header(block_header)
+        header_rlp_ints = Data.from_bytes(header_serialized.raw_rlp()).to_ints()
+
+        ids.block_header_rlp_bytes_len = header_rlp_ints.length
+        segments.write_arg(ids.block_header_rlp, header_rlp_ints.values)
+        ids.block_header_rlp_len = len(header_rlp_ints.values)
 
         # +1 below is to use child block number (reference block).
-        ids.block_number_process_block = block['number'] + 1
+        ids.block_number_process_block = block_header['number'] + 1
 
         # Save in ctxt for later retrieval
-        context.saved_block_header_rlp = block_rlp
+        context.saved_block_header_rlp = header_rlp_ints.values
         context.saved_block_header_rlp_len = ids.block_header_rlp_len
         context.saved_block_header_rlp_bytes_len = ids.block_header_rlp_bytes_len
     %}
+
     let (local mmr_peaks: felt*) = alloc();
     // Add first node to MMR (reference block is in contract storage).
     L1HeadersStore.process_block_from_message(
@@ -166,12 +175,13 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
     let (local mmr_peaks: felt*) = alloc();
     assert mmr_peaks[0] = node1;
     let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
+
     let (block_header_rlp: felt*) = alloc();
     local block_header_rlp_len;
     local block_header_rlp_bytes_len;
     %{
         # Retrieve from ctxt
-        segments.write_arg(ids.block_header_rlp, context.saved_block_header_rlp.values)
+        segments.write_arg(ids.block_header_rlp, context.saved_block_header_rlp)
         ids.block_header_rlp_len = context.saved_block_header_rlp_len
         ids.block_header_rlp_bytes_len = context.saved_block_header_rlp_bytes_len
     %}
@@ -204,9 +214,9 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         from utils.helpers import IntsSequence
         from rlp import encode
 
-        txns_root = Data.from_hex('0xe20b1a067dd449c4bc6650c14c53fb040949926c12024c6f8590b004aec28ba6')
-        proof_path = proof_path = Data.from_hex("0x" + encode(Data.from_hex(trie_proofs[3]['transactionIndex']).to_bytes()).hex())
-        proof = list(map(lambda element: Data.from_hex(element).to_ints(), trie_proofs[3]['txProof']))
+        txns_root = Data.from_hex('0x1c85870c7b8be91ea4292e25ccf55cfef56d7041903554b87cbca0f89e3074d4')
+        proof_path = proof_path = Data.from_hex("0x" + encode(Data.from_hex(transaction_proofs[0]['transaction']['transactionIndex']).to_bytes()).hex())
+        proof = list(map(lambda element: Data.from_hex(element).to_ints(), transaction_proofs[0]['txProof']))
 
         flat_proof = []
         flat_proof_sizes_bytes = []
@@ -234,6 +244,7 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         ids.proofs_concat_len = len(flat_proof)
         segments.write_arg(ids.proofs_concat, flat_proof)
     %}
+
     let (local block_proof: felt*) = alloc();
     L2StateRootsProcessor.process_state_root(
         contract_address=state_roots_processor,
