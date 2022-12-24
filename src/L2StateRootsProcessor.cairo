@@ -12,8 +12,8 @@ from lib.words64 import extract_byte
 
 from lib.types import (
     Keccak256Hash,
+    PedersenHash,
     IntsSequence,
-    StorageSlot,
     reconstruct_ints_sequence_list,
     RLPItem,
 )
@@ -53,7 +53,7 @@ func _l1_headers_store_addr() -> (res: felt) {
 
 // Stores the Starknet state roots.
 @storage_var
-func _state_roots(block_number: felt) -> (res: Keccak256Hash) {
+func _state_roots(block_number: felt) -> (res: PedersenHash) {
 }
 
 //###################################################
@@ -64,7 +64,7 @@ func _state_roots(block_number: felt) -> (res: Keccak256Hash) {
 @view
 func get_block_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     block_number: felt
-) -> (res: Keccak256Hash) {
+) -> (res: PedersenHash) {
     return _state_roots.read(block_number);
 }
 
@@ -181,7 +181,7 @@ func process_state_root{
 
     let (local calldata: IntsSequence) = extract_data(list[7].dataPosition, list[7].length, valid_rlp);
     let (local state_root: IntsSequence) = decode_state_root_from_calldata(calldata);
-    let (local block_number) = decode_block_number_from_calldata(calldata);
+    let (local block_number: felt) = decode_block_number_from_calldata(calldata);
 
     local state_root_raw: felt* = state_root.element;
     %{
@@ -199,7 +199,15 @@ func process_state_root{
 
     // // TODO: use an MMR instead (?)
     // // Store the state root of the block into this contract storage.
-    // // _state_roots.write(starknet_block_number, starknet_state_root);
+
+    local state_root_pedersen: PedersenHash = PedersenHash(
+        state_root.element[0],
+        state_root.element[1],
+        state_root.element[2],
+        state_root.element[3]
+    );
+
+    _state_roots.write(block_number, state_root_pedersen);
     return ();
 }
 

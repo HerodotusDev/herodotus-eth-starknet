@@ -7,6 +7,13 @@ struct Keccak256Hash {
     word_4: felt,
 }
 
+struct PedersenHash {
+    word_1: felt,
+    word_2: felt,
+    word_3: felt,
+    word_4: felt,
+}
+
 struct StorageSlot {
     word_1: felt,
     word_2: felt,
