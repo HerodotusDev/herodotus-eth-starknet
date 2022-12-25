@@ -195,17 +195,6 @@ func process_state_root{
     );
     let (local valid_receipt_rlp: IntsSequence) = remove_leading_byte(receipt_tree_leaf);
 
-    // local valid_rlp_size_words = valid_rlp.element_size_words;
-    // local valid_rlp_size_bytes = valid_rlp.element_size_bytes;
-    // local valid_rlp_values: felt* = valid_rlp.element;
-    // %{  
-    //     from utils.types import Data, IntsSequence 
-    //     leaf_values = memory.get_range(ids.valid_rlp_values, ids.valid_rlp_size_words)
-    //     print("Leaf values hex: ", list(map(lambda x: hex(x), leaf_values)))
-    //     leaf = Data.from_ints(IntsSequence(leaf_values, ids.valid_rlp_size_bytes))
-    //     print('leaf updated', leaf.to_hex())
-    // %}
-
     let (local tx_list: RLPItem*, list_len) = to_list(valid_tx_rlp);
     let (local receipt_list: RLPItem*, list_len) = to_list(valid_receipt_rlp);
 
@@ -225,23 +214,6 @@ func process_state_root{
 
     let (local state_root: IntsSequence) = decode_state_root_from_calldata(calldata);
     let (local block_number: felt) = decode_block_number_from_calldata(calldata);
-
-    local state_root_raw: felt* = state_root.element;
-    %{
-        from utils.types import Data, IntsSequence 
-        state_root_words = memory.get_range(ids.state_root_raw, 4)
-        state_root = Data.from_ints(IntsSequence(state_root_words, 32))
-        print("State root: ", state_root)
-        print("Block number: ", ids.block_number)
-    %}
-
-    // local tx_type = res.element[0];
-    // %{ print('Tx type', ids.tx_type) %}
-    // // let starknet_block_number = tx_calldata[0];
-    // // let starknet_state_root = tx_calldata[1];
-
-    // // TODO: use an MMR instead (?)
-    // // Store the state root of the block into this contract storage.
 
     local state_root_pedersen: PedersenHash = PedersenHash(
         state_root.element[0],
