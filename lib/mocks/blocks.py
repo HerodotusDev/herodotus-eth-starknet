@@ -3,6 +3,32 @@ from web3.types import HexBytes, BlockData
 
 mocked_goerli_blocks: List[BlockData] = [
     {
+        "author": "0x0000000000000000000000000000000000000000",
+        "difficulty": 0,
+        "extraData": HexBytes("0x"),
+        "gasLimit": 30000000,
+        "gasUsed": 26534425,
+        "hash": HexBytes("0xe5cbc2609cca1cd354313078c5fda37703c01d43c6067fc85fe3bd6390e97d70"),
+        "logsBloom": HexBytes(
+            "0xf2348d063301a8c6381150b6a1bb8a12640e68e6ab92b476686d51605aabb4b016cb17b182e11b8c11ae0cb81cc502958b832990823539c02210fe8de5a568c504614e1c8c3b8198fa11128919f8da3805aac47281d6d0392190fe86c885380a7e653014e6315be4502972d1190238100d904c50cc4cdb8c917ad890870c05b6a4c3d5373c26c8906d0f1c158a916a6381bb04272868145e75095d7f102cbb5d6647b246d722e3d1c908d8b8e1f52534b64490269c4cd0585234306e643a42000927d17ba1089f0dafa451a12ad23221019b968f2e90f8108c815312a912ee62bc93a82ffec401b74f36a9da0011c876d809871a98007b480dea48384c214356"
+        ),
+        "miner": "0x0000000000000000000000000000000000000000",
+        "mixHash": HexBytes("0x80fe7c7ce5d9086889f5af3616514c86c9a0b28d7e52269f3139772abad57fcd"),
+        "nonce": HexBytes("0x0000000000000000"),
+        "number": 8197754,
+        "parentHash": HexBytes("0x4e606ec826bd88d93015581e1615bbce6f5e65817cae387383a8442b12edf695"),
+        "receiptsRoot": HexBytes("0x3f6773df7946c5e1761497807f1a08f608a019e7ea6e10145325d6c79f17e356"),
+        "sha3Uncles": HexBytes("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+        "size": 306530,
+        "stateRoot": HexBytes("0x0993d93cf62326112d77f5adccf87f85abaa164d266ee15ecdaf320eaf03b061"),
+        "totalDifficulty": 10790000,
+        "timestamp": 1671967704,
+        "baseFeePerGas": 14,
+        "transactions": [],
+        "transactionsRoot": HexBytes("0xfdd23cb69a50991af0877640fad1aa285086819acf316dcf6ee6b769141a8316"),
+        "uncles": []
+    },
+    {
         "author": "0x4d496ccc28058b1d74b7a19541663e21154f9c84",
         "difficulty": 0,
         "extraData": HexBytes("0x"),

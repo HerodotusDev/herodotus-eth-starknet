@@ -94,7 +94,7 @@ func init_headers_store{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
         header_serialized = build_block_header(block_header)
         header_rlp_ints = Data.from_bytes(header_serialized.raw_rlp()).to_ints()
 
-        trusted_parent_hash = Data.from_hex("0xb6cfbc27d9bcbf34784611c420bd3dda19deab46ffaae23a2b9beeaafd548525")
+        trusted_parent_hash = Data.from_hex("0xe5cbc2609cca1cd354313078c5fda37703c01d43c6067fc85fe3bd6390e97d70")
         assert trusted_parent_hash.to_hex() == header_serialized.hash().hex()
         
         parent_hash = trusted_parent_hash.to_ints(Encoding.BIG).values
@@ -214,7 +214,7 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         from utils.helpers import IntsSequence
         from rlp import encode
 
-        txns_root = Data.from_hex('0x1c85870c7b8be91ea4292e25ccf55cfef56d7041903554b87cbca0f89e3074d4')
+        txns_root = Data.from_hex('0xfdd23cb69a50991af0877640fad1aa285086819acf316dcf6ee6b769141a8316')
         proof_path = proof_path = Data.from_hex("0x" + encode(Data.from_hex(transaction_proofs[0]['transaction']['transactionIndex']).to_bytes()).hex())
         proof = list(map(lambda element: Data.from_hex(element).to_ints(), transaction_proofs[0]['txProof']))
 
