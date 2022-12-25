@@ -17,7 +17,7 @@ from lib.types import (
     reconstruct_ints_sequence_list,
     RLPItem,
 )
-from lib.blockheader_rlp_extractor import decode_transactions_root
+from lib.blockheader_rlp_extractor import decode_transactions_root, decode_receipts_root
 from lib.extract_from_rlp import getElement, to_list, extract_data
 from lib.trie_proofs import verify_proof
 
@@ -102,8 +102,14 @@ func process_state_root{
     transaction_inclusion_proof_sizes_bytes: felt*,
     transaction_inclusion_proof_sizes_words_len: felt,
     transaction_inclusion_proof_sizes_words: felt*,
-    transaction_inclusion_proofs_concat_len: felt,
-    transaction_inclusion_proofs_concat: felt*,
+    transaction_inclusion_proof_concat_len: felt,
+    transaction_inclusion_proof_concat: felt*,
+    receipt_inclusion_proof_sizes_bytes_len: felt,
+    receipt_inclusion_proof_sizes_bytes: felt*,
+    receipt_inclusion_proof_sizes_words_len: felt,
+    receipt_inclusion_proof_sizes_words: felt*,
+    receipt_inclusion_proof_concat_len: felt,
+    receipt_inclusion_proof_concat: felt*,
 ) {
     alloc_locals;
     let (local headers_store_addr) = _l1_headers_store_addr.read();
@@ -122,27 +128,50 @@ func process_state_root{
     );
 
     local block_header: IntsSequence = IntsSequence(l1_header_rlp, l1_header_rlp_len, l1_header_rlp_bytes_len);
-    let (local decoded_root: Keccak256Hash) = decode_transactions_root(block_header);
-
-    let (root_words: felt*) = alloc();
-    assert root_words[0] = decoded_root.word_1;
-    assert root_words[1] = decoded_root.word_2;
-    assert root_words[2] = decoded_root.word_3;
-    assert root_words[3] = decoded_root.word_4;
-
+    
+    let (local decoded_txns_root: Keccak256Hash) = decode_transactions_root(block_header);
+    let (txns_root_words: felt*) = alloc();
+    assert txns_root_words[0] = decoded_txns_root.word_1;
+    assert txns_root_words[1] = decoded_txns_root.word_2;
+    assert txns_root_words[2] = decoded_txns_root.word_3;
+    assert txns_root_words[3] = decoded_txns_root.word_4;
     // Form the keccak256 hash of the tree root.
-    local txns_root: IntsSequence = IntsSequence(root_words, 4, 32);
+    local txns_root: IntsSequence = IntsSequence(txns_root_words, 4, 32);
 
-    // Format the proof to the expected data type.
+    let (local decoded_receipts_root: Keccak256Hash) = decode_receipts_root(block_header);
+    let (receipts_root_words: felt*) = alloc();
+    assert receipts_root_words[0] = decoded_receipts_root.word_1;
+    assert receipts_root_words[1] = decoded_receipts_root.word_2;
+    assert receipts_root_words[2] = decoded_receipts_root.word_3;
+    assert receipts_root_words[3] = decoded_receipts_root.word_4;
+    // Form the keccak256 hash of the tree root.
+    local receipts_root: IntsSequence = IntsSequence(receipts_root_words, 4, 32);
+
+    // Format tx inclusion proof to the expected data type.
     let (local transaction_inclusion_proof: IntsSequence*) = alloc();
     reconstruct_ints_sequence_list(
-        transaction_inclusion_proofs_concat,
-        transaction_inclusion_proofs_concat_len,
+        transaction_inclusion_proof_concat,
+        transaction_inclusion_proof_concat_len,
         transaction_inclusion_proof_sizes_words,
         transaction_inclusion_proof_sizes_words_len,
         transaction_inclusion_proof_sizes_bytes,
         transaction_inclusion_proof_sizes_bytes_len,
         transaction_inclusion_proof,
+        0,
+        0,
+        0,
+    );
+
+    // Format receipt inclusion proof to the expected data type.
+    let (local receipt_inclusion_proof: IntsSequence*) = alloc();
+    reconstruct_ints_sequence_list(
+        receipt_inclusion_proof_concat,
+        receipt_inclusion_proof_concat_len,
+        receipt_inclusion_proof_sizes_words,
+        receipt_inclusion_proof_sizes_words_len,
+        receipt_inclusion_proof_sizes_bytes,
+        receipt_inclusion_proof_sizes_bytes_len,
+        receipt_inclusion_proof,
         0,
         0,
         0,
@@ -156,8 +185,15 @@ func process_state_root{
         transaction_inclusion_proof,
         transaction_inclusion_proof_sizes_bytes_len,
     );
+    let (local valid_tx_rlp: IntsSequence) = remove_leading_byte(tx_tree_leaf);
 
-    let (local valid_rlp: IntsSequence) = remove_leading_byte(tx_tree_leaf);
+    let (local receipt_tree_leaf: IntsSequence) = verify_proof(
+        path_arg,
+        receipts_root,
+        receipt_inclusion_proof,
+        receipt_inclusion_proof_sizes_bytes_len,
+    );
+    let (local valid_receipt_rlp: IntsSequence) = remove_leading_byte(receipt_tree_leaf);
 
     // local valid_rlp_size_words = valid_rlp.element_size_words;
     // local valid_rlp_size_bytes = valid_rlp.element_size_bytes;
@@ -170,16 +206,23 @@ func process_state_root{
     //     print('leaf updated', leaf.to_hex())
     // %}
 
-    let (local list: RLPItem*, list_len) = to_list(valid_rlp);
+    let (local tx_list: RLPItem*, list_len) = to_list(valid_tx_rlp);
+    let (local receipt_list: RLPItem*, list_len) = to_list(valid_receipt_rlp);
 
-    let (local recipient: IntsSequence) = extract_data(list[5].dataPosition, list[5].length, valid_rlp);
+    let (local tx_status: IntsSequence) = extract_data(receipt_list[0].dataPosition, receipt_list[0].length, valid_receipt_rlp);
+    assert tx_status.element[0] = 1; 
 
+    let (local recipient: IntsSequence) = extract_data(tx_list[5].dataPosition, tx_list[5].length, valid_tx_rlp);
     // Goerli L2 contract 0xde29d060d45901fb19ed6c6e959eb22d8626708e
     assert recipient.element[0] = 0xde29d060d45901fb;
     assert recipient.element[1] = 0x19ed6c6e959eb22d;
     assert recipient.element[2] = 0x000000008626708e;
 
-    let (local calldata: IntsSequence) = extract_data(list[7].dataPosition, list[7].length, valid_rlp);
+    let (local calldata: IntsSequence) = extract_data(tx_list[7].dataPosition, tx_list[7].length, valid_tx_rlp);
+    
+    let (local selector: felt) = decode_selector_from_calldata(calldata);
+    assert selector = 0x77552641;
+
     let (local state_root: IntsSequence) = decode_state_root_from_calldata(calldata);
     let (local block_number: felt) = decode_block_number_from_calldata(calldata);
 
@@ -209,6 +252,15 @@ func process_state_root{
 
     _state_roots.write(block_number, state_root_pedersen);
     return ();
+}
+
+func decode_selector_from_calldata{
+    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(calldata: IntsSequence) -> (selector: felt) {
+    alloc_locals;
+    local selector_calldata_section = calldata.element[0];
+    let (local selector) = bitshift_right(selector_calldata_section, 8 * 4);
+    return (selector, );
 }
 
 func decode_block_number_from_calldata{

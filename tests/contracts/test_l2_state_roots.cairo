@@ -51,8 +51,14 @@ namespace L2StateRootsProcessor {
         transaction_inclusion_proof_sizes_bytes: felt*,
         transaction_inclusion_proof_sizes_words_len: felt,
         transaction_inclusion_proof_sizes_words: felt*,
-        transaction_inclusion_proofs_concat_len: felt,
-        transaction_inclusion_proofs_concat: felt*,
+        transaction_inclusion_proof_concat_len: felt,
+        transaction_inclusion_proof_concat: felt*,
+        receipt_inclusion_proof_sizes_bytes_len: felt,
+        receipt_inclusion_proof_sizes_bytes: felt*,
+        receipt_inclusion_proof_sizes_words_len: felt,
+        receipt_inclusion_proof_sizes_words: felt*,
+        receipt_inclusion_proof_concat_len: felt,
+        receipt_inclusion_proof_concat: felt*
     ) {
     }
 }
@@ -189,17 +195,26 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
     local path_size_bytes;
     local path_len;
     let (path: felt*) = alloc();
-    local root_hash_size_bytes;
-    local root_hash_len;
-    let (root_hash: felt*) = alloc();
 
-    local proof_sizes_bytes_len;
-    let (proof_sizes_bytes: felt*) = alloc();
-    local proof_sizes_words_len;
+    local tx_proof_sizes_bytes_len;
+    let (tx_proof_sizes_bytes: felt*) = alloc();
 
-    let (proof_sizes_words: felt*) = alloc();
-    local proofs_concat_len;
-    let (proofs_concat: felt*) = alloc();
+    local tx_proof_sizes_words_len;
+    let (tx_proof_sizes_words: felt*) = alloc();
+
+    local tx_proof_concat_len;
+    let (tx_proof_concat: felt*) = alloc();
+
+
+    local receipt_proof_sizes_bytes_len;
+    let (receipt_proof_sizes_bytes: felt*) = alloc();
+
+    local receipt_proof_sizes_words_len;
+    let (receipt_proof_sizes_words: felt*) = alloc();
+
+    local receipt_proof_concat_len;
+    let (receipt_proof_concat: felt*) = alloc();
+
     %{
         from mocks.trie_proofs import trie_proofs, transaction_proofs, receipts_proofs
         from utils.types import Data
@@ -214,35 +229,50 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         from utils.helpers import IntsSequence
         from rlp import encode
 
-        txns_root = Data.from_hex('0xfdd23cb69a50991af0877640fad1aa285086819acf316dcf6ee6b769141a8316')
         proof_path = proof_path = Data.from_hex("0x" + encode(Data.from_hex(transaction_proofs[0]['transaction']['transactionIndex']).to_bytes()).hex())
-        proof = list(map(lambda element: Data.from_hex(element).to_ints(), transaction_proofs[0]['txProof']))
-
-        flat_proof = []
-        flat_proof_sizes_bytes = []
-        flat_proof_sizes_words = []
-        for proof_element in proof:
-            flat_proof += proof_element.values
-            flat_proof_sizes_bytes += [proof_element.length]
-            flat_proof_sizes_words += [len(proof_element.values)]
 
         path_values = proof_path.to_ints().values
         segments.write_arg(ids.path, path_values)
         ids.path_len = len(path_values)
         ids.path_size_bytes = proof_path.to_ints().length
 
-        txns_root_values = txns_root.to_ints().values
-        segments.write_arg(ids.root_hash, txns_root_values)
-        ids.root_hash_len = len(txns_root_values)
-        ids.root_hash_size_bytes = txns_root.to_ints().length
+        # Handle tx proof
+        tx_proof = list(map(lambda element: Data.from_hex(element).to_ints(), transaction_proofs[0]['txProof']))
+        flat_tx_proof = []
+        flat_tx_proof_sizes_bytes = []
+        flat_tx_proof_sizes_words = []
+        for proof_element in tx_proof:
+            flat_tx_proof += proof_element.values
+            flat_tx_proof_sizes_bytes += [proof_element.length]
+            flat_tx_proof_sizes_words += [len(proof_element.values)]
 
-        ids.proof_sizes_bytes_len = len(flat_proof_sizes_bytes)
-        segments.write_arg(ids.proof_sizes_bytes, flat_proof_sizes_bytes)
-        ids.proof_sizes_words_len = len(flat_proof_sizes_words)
-        segments.write_arg(ids.proof_sizes_words, flat_proof_sizes_words)
+        ids.tx_proof_sizes_bytes_len = len(flat_tx_proof_sizes_bytes)
+        segments.write_arg(ids.tx_proof_sizes_bytes, flat_tx_proof_sizes_bytes)
 
-        ids.proofs_concat_len = len(flat_proof)
-        segments.write_arg(ids.proofs_concat, flat_proof)
+        ids.tx_proof_sizes_words_len = len(flat_tx_proof_sizes_words)
+        segments.write_arg(ids.tx_proof_sizes_words, flat_tx_proof_sizes_words)
+
+        ids.tx_proof_concat_len = len(flat_tx_proof)
+        segments.write_arg(ids.tx_proof_concat, flat_tx_proof)
+        
+        # Handle receipt proof
+        receipt_proof = list(map(lambda element: Data.from_hex(element).to_ints(), receipts_proofs[0]['receiptProof']))
+        flat_receipt_proof = []
+        flat_receipt_proof_sizes_bytes = []
+        flat_receipt_proof_sizes_words = []
+        for proof_element in receipt_proof:
+            flat_receipt_proof += proof_element.values
+            flat_receipt_proof_sizes_bytes += [proof_element.length]
+            flat_receipt_proof_sizes_words += [len(proof_element.values)]
+
+        ids.receipt_proof_sizes_bytes_len = len(flat_receipt_proof_sizes_bytes)
+        segments.write_arg(ids.receipt_proof_sizes_bytes, flat_receipt_proof_sizes_bytes)
+
+        ids.receipt_proof_sizes_words_len = len(flat_receipt_proof_sizes_words)
+        segments.write_arg(ids.receipt_proof_sizes_words, flat_receipt_proof_sizes_words)
+
+        ids.receipt_proof_concat_len = len(flat_receipt_proof)
+        segments.write_arg(ids.receipt_proof_concat, flat_receipt_proof)
     %}
 
     let (local block_proof: felt*) = alloc();
@@ -262,12 +292,18 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         path_size_bytes=path_size_bytes,
         path_len=path_len,
         path=path,
-        transaction_inclusion_proof_sizes_bytes_len=proof_sizes_bytes_len,
-        transaction_inclusion_proof_sizes_bytes=proof_sizes_bytes,
-        transaction_inclusion_proof_sizes_words_len=proof_sizes_words_len,
-        transaction_inclusion_proof_sizes_words=proof_sizes_words,
-        transaction_inclusion_proofs_concat_len=proofs_concat_len,
-        transaction_inclusion_proofs_concat=proofs_concat,
+        transaction_inclusion_proof_sizes_bytes_len=tx_proof_sizes_bytes_len,
+        transaction_inclusion_proof_sizes_bytes=tx_proof_sizes_bytes,
+        transaction_inclusion_proof_sizes_words_len=tx_proof_sizes_words_len,
+        transaction_inclusion_proof_sizes_words=tx_proof_sizes_words,
+        transaction_inclusion_proof_concat_len=tx_proof_concat_len,
+        transaction_inclusion_proof_concat=tx_proof_concat,
+        receipt_inclusion_proof_sizes_bytes_len=receipt_proof_sizes_bytes_len,
+        receipt_inclusion_proof_sizes_bytes=receipt_proof_sizes_bytes,
+        receipt_inclusion_proof_sizes_words_len=receipt_proof_sizes_words_len,
+        receipt_inclusion_proof_sizes_words=receipt_proof_sizes_words,
+        receipt_inclusion_proof_concat_len=receipt_proof_concat_len,
+        receipt_inclusion_proof_concat=receipt_proof_concat
     );
     return ();
 }
