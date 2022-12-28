@@ -373,7 +373,7 @@ func test_verify_valid_transaction_proof{range_check_ptr, bitwise_ptr: BitwiseBu
     local proofs_concat_len;
     let (proofs_concat: felt*) = alloc();
     %{
-        from mocks.trie_proofs import trie_proofs, transaction_proofs, receipts_proofs
+        from mocks.trie_proofs import trie_proofs, legacy_transaction_proofs, receipts_proofs
         from utils.types import Data
         from web3 import Web3
         from utils.rlp import to_list, extract_list_values
@@ -388,8 +388,8 @@ func test_verify_valid_transaction_proof{range_check_ptr, bitwise_ptr: BitwiseBu
 
 
         txns_root = Data.from_hex('0x51a8f471a6eed8d7da6aa588eb4e9a0764770f5c20b0e1e05c1210abbb05dd78')
-        proof_path = proof_path = Data.from_hex("0x" + encode(Data.from_hex(transaction_proofs[0]['transaction']['transactionIndex']).to_bytes()).hex())
-        proof = list(map(lambda element: Data.from_hex(element).to_ints(), transaction_proofs[0]['txProof']))
+        proof_path = proof_path = Data.from_hex("0x" + encode(Data.from_hex(legacy_transaction_proofs[0]['transaction']['transactionIndex']).to_bytes()).hex())
+        proof = list(map(lambda element: Data.from_hex(element).to_ints(), legacy_transaction_proofs[0]['txProof']))
 
         flat_proof = []
         flat_proof_sizes_bytes = []
