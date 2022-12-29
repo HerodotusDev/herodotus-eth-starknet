@@ -33,18 +33,20 @@ namespace L1HeadersStore {
 @contract_interface
 namespace L2StateRootsProcessor {
     func process_state_root(
+        l1_inclusion_header_leaf_index: felt,
+        l1_inclusion_header_leaf_value: felt,
+        l1_inclusion_header_proof_len: felt,
+        l1_inclusion_header_proof: felt*,
+        l1_inclusion_header_peaks_len: felt,
+        l1_inclusion_header_peaks: felt*,
+        l1_inclusion_header_inclusion_tx_hash: felt,
+        l1_inclusion_header_mmr_pos: felt,
         l1_inclusion_header_rlp_len: felt,
         l1_inclusion_header_rlp: felt*,
         l1_inclusion_header_rlp_bytes_len: felt,
         path_size_bytes: felt,
         path_len: felt,
         path: felt*,
-        transaction_inclusion_proof_sizes_bytes_len: felt,
-        transaction_inclusion_proof_sizes_bytes: felt*,
-        transaction_inclusion_proof_sizes_words_len: felt,
-        transaction_inclusion_proof_sizes_words: felt*,
-        transaction_inclusion_proof_concat_len: felt,
-        transaction_inclusion_proof_concat: felt*,
         receipt_inclusion_proof_sizes_bytes_len: felt,
         receipt_inclusion_proof_sizes_bytes: felt*,
         receipt_inclusion_proof_sizes_words_len: felt,
@@ -66,7 +68,7 @@ func __setup__{syscall_ptr: felt*, range_check_ptr}() {
         pub_key = private_to_stark_key(priv_key)
         context.relayer_pub_key = pub_key
         context.l1_headers_store_addr = deploy_contract("src/L1HeadersStoreV2.cairo", [pub_key]).contract_address
-        context.state_roots_processor = deploy_contract("src/L2StateRootsProcessor.cairo",  []).contract_address
+        context.state_roots_processor = deploy_contract("src/L2StateRootsProcessor.cairo",  [context.l1_headers_store_addr]).contract_address
     %}
     return ();
 }
@@ -161,9 +163,18 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
     ) {
     alloc_locals;
     local state_roots_processor;
-    %{ ids.state_roots_processor = context.state_roots_processor %}
+    local l1_headers_store;
+    %{
+        ids.state_roots_processor = context.state_roots_processor
+        ids.l1_headers_store = context.l1_headers_store_addr
+    %}
+    let (info) = get_tx_info();
 
-    init_headers_store();
+    let (local pedersen_hash: felt) = init_headers_store();
+    let (node1) = hash2{hash_ptr=pedersen_ptr}(1, pedersen_hash);
+    let (local mmr_peaks: felt*) = alloc();
+    assert mmr_peaks[0] = node1;
+    let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
 
     let (block_header_rlp: felt*) = alloc();
     local block_header_rlp_len;
@@ -260,18 +271,20 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
     let (local block_proof: felt*) = alloc();
     L2StateRootsProcessor.process_state_root(
         contract_address=state_roots_processor,
+        l1_inclusion_header_leaf_index=1,
+        l1_inclusion_header_leaf_value=pedersen_hash,
+        l1_inclusion_header_proof_len=0,
+        l1_inclusion_header_proof=block_proof,
+        l1_inclusion_header_peaks_len=1,
+        l1_inclusion_header_peaks=mmr_peaks,
+        l1_inclusion_header_inclusion_tx_hash=info.transaction_hash,
+        l1_inclusion_header_mmr_pos=mmr_pos,
         l1_inclusion_header_rlp_len=block_header_rlp_len,
         l1_inclusion_header_rlp=block_header_rlp,
         l1_inclusion_header_rlp_bytes_len=block_header_rlp_bytes_len,
         path_size_bytes=path_size_bytes,
         path_len=path_len,
         path=path,
-        transaction_inclusion_proof_sizes_bytes_len=tx_proof_sizes_bytes_len,
-        transaction_inclusion_proof_sizes_bytes=tx_proof_sizes_bytes,
-        transaction_inclusion_proof_sizes_words_len=tx_proof_sizes_words_len,
-        transaction_inclusion_proof_sizes_words=tx_proof_sizes_words,
-        transaction_inclusion_proof_concat_len=tx_proof_concat_len,
-        transaction_inclusion_proof_concat=tx_proof_concat,
         receipt_inclusion_proof_sizes_bytes_len=receipt_proof_sizes_bytes_len,
         receipt_inclusion_proof_sizes_bytes=receipt_proof_sizes_bytes,
         receipt_inclusion_proof_sizes_words_len=receipt_proof_sizes_words_len,

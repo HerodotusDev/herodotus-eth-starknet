@@ -21,8 +21,34 @@ from lib.extract_from_rlp import getElement, to_list, extract_data
 from lib.trie_proofs import verify_proof
 
 //###################################################
+//        CONTRACTS INTERFACES
+//###################################################
+
+@contract_interface
+namespace IL1HeadersStore {
+    func call_mmr_verify_past_proof(
+        index: felt,
+        value: felt,
+        proof_len: felt,
+        proof: felt*,
+        peaks_len: felt,
+        peaks: felt*,
+        inclusion_tx_hash: felt,
+        mmr_pos: felt,
+    ) {
+    }
+}
+
+//###################################################
 //        STORAGE
 //###################################################
+
+//
+// Stores the L1 headers store contract address.
+//
+@storage_var
+func _l1_headers_store_addr() -> (res: felt) {
+}
 
 // Stores the Starknet state roots.
 @storage_var
@@ -42,7 +68,10 @@ func get_block_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_
 }
 
 @constructor
-func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    l1_headers_store_addr: felt
+) {
+    _l1_headers_store_addr.write(l1_headers_store_addr);
     return ();
 }
 
@@ -54,18 +83,20 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 func process_state_root{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(
+    mmr_inclusion_header_leaf_index: felt,
+    mmr_inclusion_header_leaf_value: felt,
+    mmr_inclusion_header_proof_len: felt,
+    mmr_inclusion_header_proof: felt*,
+    mmr_inclusion_header_peaks_len: felt,
+    mmr_inclusion_header_peaks: felt*,
+    mmr_inclusion_header_inclusion_tx_hash: felt,
+    mmr_inclusion_header_pos: felt,
     l1_header_rlp_len: felt,
     l1_header_rlp: felt*,
     l1_header_rlp_bytes_len: felt,
     path_size_bytes: felt,
     path_len: felt,
     path: felt*,
-    transaction_inclusion_proof_sizes_bytes_len: felt,
-    transaction_inclusion_proof_sizes_bytes: felt*,
-    transaction_inclusion_proof_sizes_words_len: felt,
-    transaction_inclusion_proof_sizes_words: felt*,
-    transaction_inclusion_proof_concat_len: felt,
-    transaction_inclusion_proof_concat: felt*,
     receipt_inclusion_proof_sizes_bytes_len: felt,
     receipt_inclusion_proof_sizes_bytes: felt*,
     receipt_inclusion_proof_sizes_words_len: felt,
@@ -74,6 +105,21 @@ func process_state_root{
     receipt_inclusion_proof_concat: felt*,
 ) {
     alloc_locals;
+    let (local headers_store_addr) = _l1_headers_store_addr.read();
+
+    // Verify the header inclusion in the headers store's MMR.
+    IL1HeadersStore.call_mmr_verify_past_proof(
+        contract_address=headers_store_addr,
+        index=mmr_inclusion_header_leaf_index,
+        value=mmr_inclusion_header_leaf_value,
+        proof_len=mmr_inclusion_header_proof_len,
+        proof=mmr_inclusion_header_proof,
+        peaks_len=mmr_inclusion_header_peaks_len,
+        peaks=mmr_inclusion_header_peaks,
+        inclusion_tx_hash=mmr_inclusion_header_inclusion_tx_hash,
+        mmr_pos=mmr_inclusion_header_pos,
+    );
+
     local block_header: IntsSequence = IntsSequence(l1_header_rlp, l1_header_rlp_len, l1_header_rlp_bytes_len);
 
     let (local decoded_txns_root: Keccak256Hash) = decode_transactions_root(block_header);
