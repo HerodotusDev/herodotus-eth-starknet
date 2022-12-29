@@ -158,12 +158,12 @@ func process_state_root{
     );
     assert tx_status.element[0] = 1;
 
-    let (local event_section: IntsSequence) = extract_data(
+    let (local logs_section: IntsSequence) = extract_data(
         receipt_list[3].dataPosition, receipt_list[3].length, valid_receipt_rlp
     );
-    let (local state_root: IntsSequence) = decode_global_root_from_logs(event_section);
-    let (local block_number: felt) = decode_block_number_from_logs(event_section);
-    let (local recipient: IntsSequence) = decode_recipient_from_logs(event_section);
+    let (local state_root: IntsSequence) = decode_global_root_from_logs(logs_section);
+    let (local block_number: felt) = decode_block_number_from_logs(logs_section);
+    let (local recipient: IntsSequence) = decode_recipient_from_logs(logs_section);
     // Goerli L2 contract 0xde29d060d45901fb19ed6c6e959eb22d8626708e
     assert recipient.element[0] = 0xde29d060d45901fb;
     assert recipient.element[1] = 0x19ed6c6e959eb22d;
@@ -182,11 +182,11 @@ func process_state_root{
 
 func decode_recipient_from_logs{
     pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
-}(event_section: IntsSequence) -> (recipient: IntsSequence) {
+}(logs_section: IntsSequence) -> (recipient: IntsSequence) {
     alloc_locals;
-    local event_data_section_1 = event_section.element[0];
-    local event_data_section_2 = event_section.element[1];
-    local event_data_section_3 = event_section.element[2];
+    local event_data_section_1 = logs_section.element[0];
+    local event_data_section_2 = logs_section.element[1];
+    local event_data_section_3 = logs_section.element[2];
 
     let (local recipient_1_head) = bitshift_left(event_data_section_1, 8 * 3);
     let (local recipient_1_tail) = bitshift_right(event_data_section_2, 8 * 5);
@@ -210,13 +210,13 @@ func decode_recipient_from_logs{
 
 func decode_global_root_from_logs{
     pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
-}(event_section: IntsSequence) -> (state_root: IntsSequence) {
+}(logs_section: IntsSequence) -> (state_root: IntsSequence) {
     alloc_locals;
-    local event_data_section_1 = event_section.element[18];
-    local event_data_section_2 = event_section.element[19];
-    local event_data_section_3 = event_section.element[20];
-    local event_data_section_4 = event_section.element[21];
-    local event_data_section_5 = event_section.element[22];
+    local event_data_section_1 = logs_section.element[18];
+    local event_data_section_2 = logs_section.element[19];
+    local event_data_section_3 = logs_section.element[20];
+    local event_data_section_4 = logs_section.element[21];
+    local event_data_section_5 = logs_section.element[22];
 
     let (local global_root_1_head) = bitshift_left(event_data_section_1, 8 * 5);
     let (local global_root_1_tail) = bitshift_right(event_data_section_2, 8 * 3);
@@ -245,65 +245,10 @@ func decode_global_root_from_logs{
 
 func decode_block_number_from_logs{
     pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
-}(event_section: IntsSequence) -> (block_number: felt) {
+}(logs_section: IntsSequence) -> (block_number: felt) {
     alloc_locals;
-    local block_number_section = event_section.element[26];
+    local block_number_section = logs_section.element[26];
     return (block_number=block_number_section);
-}
-
-func decode_selector_from_calldata{
-    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
-}(calldata: IntsSequence) -> (selector: felt) {
-    alloc_locals;
-    local selector_calldata_section = calldata.element[0];
-    let (local selector) = bitshift_right(selector_calldata_section, 8 * 4);
-    return (selector,);
-}
-
-func decode_block_number_from_calldata{
-    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
-}(calldata: IntsSequence) -> (block_number: felt) {
-    alloc_locals;
-    local block_number_calldata_section = calldata.element[28];  // 1st half of the word belongs to the state root
-    let (local block_number) = bitshift_right(block_number_calldata_section, 8 * 4);
-    return (block_number,);
-}
-
-func decode_state_root_from_calldata{
-    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
-}(calldata: IntsSequence) -> (state_root: IntsSequence) {
-    alloc_locals;
-    local state_root_calldata_section_1 = calldata.element[20];  // 2nd half of the word is already the state root
-    local state_root_calldata_section_2 = calldata.element[21];  // Whole word
-    local state_root_calldata_section_3 = calldata.element[22];  // Whole word
-    local state_root_calldata_section_4 = calldata.element[23];  // Whole word
-    local state_root_calldata_section_5 = calldata.element[24];  // 1st half of the word belongs to the state root
-
-    let (local word_1_head) = bitshift_left(state_root_calldata_section_1, 32);
-    let (local word_1_tail) = bitshift_right(state_root_calldata_section_2, 32);
-    local state_root_word_1 = word_1_head + word_1_tail;
-
-    let (local word_2_head) = bitshift_left(state_root_calldata_section_2, 32);
-    let (local word_2_tail) = bitshift_right(state_root_calldata_section_3, 32);
-    local state_root_word_2 = word_2_head + word_2_tail;
-
-    let (local word_3_head) = bitshift_left(state_root_calldata_section_3, 32);
-    let (local word_3_tail) = bitshift_right(state_root_calldata_section_4, 32);
-    local state_root_word_3 = word_3_head + word_3_tail;
-
-    let (local word_4_head) = bitshift_left(state_root_calldata_section_4, 32);
-    let (local word_4_tail) = bitshift_right(state_root_calldata_section_5, 32);
-    local state_root_word_4 = word_4_head + word_4_tail;
-
-    let (local state_root_elements: felt*) = alloc();
-
-    assert state_root_elements[0] = state_root_word_1;
-    assert state_root_elements[1] = state_root_word_2;
-    assert state_root_elements[2] = state_root_word_3;
-    assert state_root_elements[3] = state_root_word_4;
-
-    local state_root: IntsSequence = IntsSequence(state_root_elements, 4, 32);
-    return (state_root,);
 }
 
 func remove_leading_byte{pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(
