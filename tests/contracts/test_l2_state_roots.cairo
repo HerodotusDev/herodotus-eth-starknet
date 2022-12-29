@@ -33,14 +33,6 @@ namespace L1HeadersStore {
 @contract_interface
 namespace L2StateRootsProcessor {
     func process_state_root(
-        l1_inclusion_header_leaf_index: felt,
-        l1_inclusion_header_leaf_value: felt,
-        l1_inclusion_header_proof_len: felt,
-        l1_inclusion_header_proof: felt*,
-        l1_inclusion_header_peaks_len: felt,
-        l1_inclusion_header_peaks: felt*,
-        l1_inclusion_header_inclusion_tx_hash: felt,
-        l1_inclusion_header_mmr_pos: felt,
         l1_inclusion_header_rlp_len: felt,
         l1_inclusion_header_rlp: felt*,
         l1_inclusion_header_rlp_bytes_len: felt,
@@ -58,7 +50,7 @@ namespace L2StateRootsProcessor {
         receipt_inclusion_proof_sizes_words_len: felt,
         receipt_inclusion_proof_sizes_words: felt*,
         receipt_inclusion_proof_concat_len: felt,
-        receipt_inclusion_proof_concat: felt*
+        receipt_inclusion_proof_concat: felt*,
     ) {
     }
 }
@@ -74,7 +66,7 @@ func __setup__{syscall_ptr: felt*, range_check_ptr}() {
         pub_key = private_to_stark_key(priv_key)
         context.relayer_pub_key = pub_key
         context.l1_headers_store_addr = deploy_contract("src/L1HeadersStoreV2.cairo", [pub_key]).contract_address
-        context.state_roots_processor = deploy_contract("src/L2StateRootsProcessor.cairo",  [context.l1_headers_store_addr]).contract_address
+        context.state_roots_processor = deploy_contract("src/L2StateRootsProcessor.cairo",  []).contract_address
     %}
     return ();
 }
@@ -102,7 +94,7 @@ func init_headers_store{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
 
         trusted_parent_hash = Data.from_hex("0xe5cbc2609cca1cd354313078c5fda37703c01d43c6067fc85fe3bd6390e97d70")
         assert trusted_parent_hash.to_hex() == header_serialized.hash().hex()
-        
+
         parent_hash = trusted_parent_hash.to_ints(Encoding.BIG).values
         segments.write_arg(ids.parent_hash, parent_hash)
         ids.block_number = mocked_goerli_blocks[0]['number'] + 1
@@ -169,18 +161,9 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
     ) {
     alloc_locals;
     local state_roots_processor;
-    local l1_headers_store;
-    %{
-        ids.state_roots_processor = context.state_roots_processor
-        ids.l1_headers_store = context.l1_headers_store_addr
-    %}
-    let (info) = get_tx_info();
+    %{ ids.state_roots_processor = context.state_roots_processor %}
 
-    let (local pedersen_hash: felt) = init_headers_store();
-    let (node1) = hash2{hash_ptr=pedersen_ptr}(1, pedersen_hash);
-    let (local mmr_peaks: felt*) = alloc();
-    assert mmr_peaks[0] = node1;
-    let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
+    init_headers_store();
 
     let (block_header_rlp: felt*) = alloc();
     local block_header_rlp_len;
@@ -204,7 +187,6 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
 
     local tx_proof_concat_len;
     let (tx_proof_concat: felt*) = alloc();
-
 
     local receipt_proof_sizes_bytes_len;
     let (receipt_proof_sizes_bytes: felt*) = alloc();
@@ -254,7 +236,7 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
 
         ids.tx_proof_concat_len = len(flat_tx_proof)
         segments.write_arg(ids.tx_proof_concat, flat_tx_proof)
-        
+
         # Handle receipt proof
         receipt_proof = list(map(lambda element: Data.from_hex(element).to_ints(), receipts_proofs[0]['receiptProof']))
         flat_receipt_proof = []
@@ -278,14 +260,6 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
     let (local block_proof: felt*) = alloc();
     L2StateRootsProcessor.process_state_root(
         contract_address=state_roots_processor,
-        l1_inclusion_header_leaf_index=1,
-        l1_inclusion_header_leaf_value=pedersen_hash,
-        l1_inclusion_header_proof_len=0,
-        l1_inclusion_header_proof=block_proof,
-        l1_inclusion_header_peaks_len=1,
-        l1_inclusion_header_peaks=mmr_peaks,
-        l1_inclusion_header_inclusion_tx_hash=info.transaction_hash,
-        l1_inclusion_header_mmr_pos=mmr_pos,
         l1_inclusion_header_rlp_len=block_header_rlp_len,
         l1_inclusion_header_rlp=block_header_rlp,
         l1_inclusion_header_rlp_bytes_len=block_header_rlp_bytes_len,
@@ -303,7 +277,7 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         receipt_inclusion_proof_sizes_words_len=receipt_proof_sizes_words_len,
         receipt_inclusion_proof_sizes_words=receipt_proof_sizes_words,
         receipt_inclusion_proof_concat_len=receipt_proof_concat_len,
-        receipt_inclusion_proof_concat=receipt_proof_concat
+        receipt_inclusion_proof_concat=receipt_proof_concat,
     );
     return ();
 }
