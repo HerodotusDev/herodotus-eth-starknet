@@ -121,16 +121,6 @@ func process_state_root{
     );
 
     local block_header: IntsSequence = IntsSequence(l1_header_rlp, l1_header_rlp_len, l1_header_rlp_bytes_len);
-
-    let (local decoded_txns_root: Keccak256Hash) = decode_transactions_root(block_header);
-    let (txns_root_words: felt*) = alloc();
-    assert txns_root_words[0] = decoded_txns_root.word_1;
-    assert txns_root_words[1] = decoded_txns_root.word_2;
-    assert txns_root_words[2] = decoded_txns_root.word_3;
-    assert txns_root_words[3] = decoded_txns_root.word_4;
-    // Form the keccak256 hash of the tree root.
-    local txns_root: IntsSequence = IntsSequence(txns_root_words, 4, 32);
-
     let (local decoded_receipts_root: Keccak256Hash) = decode_receipts_root(block_header);
     let (receipts_root_words: felt*) = alloc();
     assert receipts_root_words[0] = decoded_receipts_root.word_1;
@@ -171,26 +161,26 @@ func process_state_root{
     let (local event_section: IntsSequence) = extract_data(
         receipt_list[3].dataPosition, receipt_list[3].length, valid_receipt_rlp
     );
-    let (local global_root: IntsSequence) = decode_global_root_from_event(event_section);
-    let (local block_number: felt) = decode_block_number_from_event(event_section);
-    let (local recipient: IntsSequence) = decode_recipient_from_event(event_section);
+    let (local state_root: IntsSequence) = decode_global_root_from_logs(event_section);
+    let (local block_number: felt) = decode_block_number_from_logs(event_section);
+    let (local recipient: IntsSequence) = decode_recipient_from_logs(event_section);
     // Goerli L2 contract 0xde29d060d45901fb19ed6c6e959eb22d8626708e
     assert recipient.element[0] = 0xde29d060d45901fb;
     assert recipient.element[1] = 0x19ed6c6e959eb22d;
     assert recipient.element[2] = 0x8626708e;
 
     local state_root_pedersen: PedersenHash = PedersenHash(
-        global_root.element[0],
-        global_root.element[1],
-        global_root.element[2],
-        global_root.element[3]
+        state_root.element[0],
+        state_root.element[1],
+        state_root.element[2],
+        state_root.element[3]
         );
 
     _state_roots.write(block_number, state_root_pedersen);
     return ();
 }
 
-func decode_recipient_from_event{
+func decode_recipient_from_logs{
     pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(event_section: IntsSequence) -> (recipient: IntsSequence) {
     alloc_locals;
@@ -218,9 +208,9 @@ func decode_recipient_from_event{
     return (recipient,);
 }
 
-func decode_global_root_from_event{
+func decode_global_root_from_logs{
     pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
-}(event_section: IntsSequence) -> (global_root: IntsSequence) {
+}(event_section: IntsSequence) -> (state_root: IntsSequence) {
     alloc_locals;
     local event_data_section_1 = event_section.element[18];
     local event_data_section_2 = event_section.element[19];
@@ -249,11 +239,11 @@ func decode_global_root_from_event{
     assert global_root_elements[1] = second_word;
     assert global_root_elements[2] = third_word;
     assert global_root_elements[3] = fourth_word;
-    local global_root: IntsSequence = IntsSequence(global_root_elements, 4, 32);
-    return (global_root,);
+    local state_root: IntsSequence = IntsSequence(global_root_elements, 4, 32);
+    return (state_root,);
 }
 
-func decode_block_number_from_event{
+func decode_block_number_from_logs{
     pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(event_section: IntsSequence) -> (block_number: felt) {
     alloc_locals;
