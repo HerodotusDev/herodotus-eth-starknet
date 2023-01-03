@@ -71,7 +71,7 @@ namespace L1HeadersStore {
     func receive_from_l1(parent_hash_len: felt, parent_hash: felt*, block_number: felt) {
     }
 
-    func get_parent_hash(block_number: felt) -> (res: Keccak256Hash) {
+    func get_commitments_parent_hash(block_number: felt) -> (res: Keccak256Hash) {
     }
 }
 
@@ -377,12 +377,10 @@ func test_receive_from_l1_with_optimistic_relay_slashing{syscall_ptr: felt*, ran
         message = bytearray.fromhex(mocked_blocks[0]["parentHash"].hex()[2:])
         chunked_message = chunk_bytes_input(message)
         formatted_words_correct = list(map(bytes_to_int_little, chunked_message))
-
         send_message_to_l2(
             fn_name='receive_from_l1',
             from_address=context.l1_messages_sender,
             to_address=context.l1_messages_proxy_address,
-            #payload=[formatted_words_correct[0], formatted_words_correct[1], formatted_words_correct[2], formatted_words_correct[3], ids.block_number, ids.reward_account],
             payload={
                 "parent_hash_word_1": formatted_words_correct[0],
                 "parent_hash_word_2": formatted_words_correct[1],
@@ -393,7 +391,7 @@ func test_receive_from_l1_with_optimistic_relay_slashing{syscall_ptr: felt*, ran
             }
         )
     %}
-    let (hash) = L1HeadersStore.get_parent_hash(
+    let (hash) = L1HeadersStore.get_commitments_parent_hash(
         contract_address=l1_headers_store_addr, block_number=block_number
     );
     %{

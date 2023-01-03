@@ -1,6 +1,12 @@
 %lang starknet
+%builtins pedersen range_check
+
 from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
+from starkware.cairo.common.hash_state import hash_felts
+from starkware.cairo.common.hash import hash2
+from starkware.starknet.common.syscalls import get_tx_info
 
 from lib.types import Keccak256Hash, Address, StorageSlot
 
@@ -9,16 +15,17 @@ namespace L1HeadersStore {
     func receive_from_l1(parent_hash_len: felt, parent_hash: felt*, block_number: felt) {
     }
 
-    func process_block(
-        options_set: felt,
-        block_number: felt,
+    func process_block_from_message(
+        reference_block_number: felt,
         block_header_rlp_bytes_len: felt,
         block_header_rlp_len: felt,
         block_header_rlp: felt*,
+        mmr_peaks_len: felt,
+        mmr_peaks: felt*,
     ) {
     }
 
-    func get_state_root(block_number: felt) -> (res: Keccak256Hash) {
+    func get_mmr_last_pos() -> (res: felt) {
     }
 }
 
@@ -34,6 +41,17 @@ namespace FactsRegistry {
         proof_sizes_words: felt*,
         proofs_concat_len: felt,
         proofs_concat: felt*,
+        block_proof_leaf_index: felt,
+        block_proof_leaf_value: felt,
+        block_proof_len: felt,
+        block_proof: felt*,
+        block_proof_peaks_len: felt,
+        block_proof_peaks: felt*,
+        block_header_rlp_len: felt,
+        block_header_rlp: felt*,
+        block_header_rlp_bytes_len: felt,
+        inclusion_tx_hash: felt,
+        mmr_pos: felt,
     ) {
     }
 
@@ -92,10 +110,11 @@ func __setup__{syscall_ptr: felt*, range_check_ptr}() {
     return ();
 }
 
-func registry_initialized{syscall_ptr: felt*, range_check_ptr}() {
+func registry_initialized{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
+    res: felt
+) {
     alloc_locals;
     local l1_headers_store;
-    local parent_hash_len;
     let (parent_hash: felt*) = alloc();
     local block_number;
     %{
@@ -112,9 +131,7 @@ func registry_initialized{syscall_ptr: felt*, range_check_ptr}() {
 
         block_parent_hash = Data.from_hex("0x62a8a05ef6fcd39a11b2d642d4b7ab177056e1eb4bde4454f67285164ef8ce65")
         assert block_parent_hash.to_hex() == block_header.hash().hex()
-
         parent_hash = block_parent_hash.to_ints(Encoding.BIG).values
-        ids.parent_hash_len = len(parent_hash)
         segments.write_arg(ids.parent_hash, parent_hash)
         ids.block_number = mocked_blocks[7]['number'] + 1
 
@@ -122,7 +139,7 @@ func registry_initialized{syscall_ptr: felt*, range_check_ptr}() {
     %}
     L1HeadersStore.receive_from_l1(
         contract_address=l1_headers_store,
-        parent_hash_len=parent_hash_len,
+        parent_hash_len=4,
         parent_hash=parent_hash,
         block_number=block_number,
     );
@@ -131,8 +148,10 @@ func registry_initialized{syscall_ptr: felt*, range_check_ptr}() {
     local block_header_rlp_len;
     let (block_header_rlp: felt*) = alloc();
     local block_number_process_block;
-    local options_set;
     %{
+        from utils.types import Data
+        from utils.block_header import build_block_header
+        from mocks.blocks import mocked_blocks
         block = mocked_blocks[7]
         block_header = build_block_header(block)
         block_rlp = Data.from_bytes(block_header.raw_rlp()).to_ints()
@@ -140,24 +159,54 @@ func registry_initialized{syscall_ptr: felt*, range_check_ptr}() {
         ids.block_header_rlp_bytes_len = block_rlp.length
         segments.write_arg(ids.block_header_rlp, block_rlp.values)
         ids.block_header_rlp_len = len(block_rlp.values)
-        ids.block_number_process_block = block['number']
-        ids.options_set = 2 ** BlockHeaderIndexes.STATE_ROOT
+
+        # +1 below is to use child block number (reference block).
+        ids.block_number_process_block = block['number'] + 1
+
+        # Save in ctxt for later retrieval
+        context.saved_block_header_rlp = block_rlp
+        context.saved_block_header_rlp_len = ids.block_header_rlp_len
+        context.saved_block_header_rlp_bytes_len = ids.block_header_rlp_bytes_len
     %}
-    L1HeadersStore.process_block(
+    let (local mmr_peaks: felt*) = alloc();
+    // Add first node to MMR (reference block is in contract storage).
+    L1HeadersStore.process_block_from_message(
         contract_address=l1_headers_store,
-        options_set=options_set,
-        block_number=block_number_process_block,
+        reference_block_number=block_number_process_block,
         block_header_rlp_bytes_len=block_header_rlp_bytes_len,
         block_header_rlp_len=block_header_rlp_len,
         block_header_rlp=block_header_rlp,
+        mmr_peaks_len=0,
+        mmr_peaks=mmr_peaks,
     );
-    return ();
+
+    let (pedersen_hash) = hash_felts{hash_ptr=pedersen_ptr}(
+        data=block_header_rlp, length=block_header_rlp_len
+    );
+    return (res=pedersen_hash);
 }
 
 @external
-func test_prove_account{syscall_ptr: felt*, range_check_ptr}() {
+func test_prove_account{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     alloc_locals;
-    registry_initialized();
+    let (local mmr_peaks: felt*) = alloc();
+    let (pedersen_hash) = registry_initialized();
+    let (node1) = hash2{hash_ptr=pedersen_ptr}(1, pedersen_hash);
+    assert mmr_peaks[0] = node1;
+    let (local block_proof: felt*) = alloc();
+
+    let (block_header_rlp: felt*) = alloc();
+    local block_header_rlp_len;
+    local block_header_rlp_bytes_len;
+    %{
+        # Retrieve from ctxt
+        segments.write_arg(ids.block_header_rlp, context.saved_block_header_rlp.values)
+        ids.block_header_rlp_len = context.saved_block_header_rlp_len
+        ids.block_header_rlp_bytes_len = context.saved_block_header_rlp_bytes_len
+    %}
+
+    local l1_headers_store;
+    %{ ids.l1_headers_store = context.l1_headers_store_addr %}
     local facts_registry;
     %{ ids.facts_registry = context.facts_registry %}
     local options_set;
@@ -199,6 +248,8 @@ func test_prove_account{syscall_ptr: felt*, range_check_ptr}() {
         segments.write_arg(ids.proofs_concat, flat_proof)
     %}
     local account: Address = Address(account_word_1, account_word_2, account_word_3);
+    let (info) = get_tx_info();
+    let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
     FactsRegistry.prove_account(
         contract_address=facts_registry,
         options_set=options_set,
@@ -210,7 +261,19 @@ func test_prove_account{syscall_ptr: felt*, range_check_ptr}() {
         proof_sizes_words=proof_sizes_words,
         proofs_concat_len=proofs_concat_len,
         proofs_concat=proofs_concat,
+        block_proof_leaf_index=1,
+        block_proof_leaf_value=pedersen_hash,
+        block_proof_len=0,
+        block_proof=block_proof,
+        block_proof_peaks_len=1,
+        block_proof_peaks=mmr_peaks,
+        block_header_rlp_len=block_header_rlp_len,
+        block_header_rlp=block_header_rlp,
+        block_header_rlp_bytes_len=block_header_rlp_bytes_len,
+        inclusion_tx_hash=info.transaction_hash,
+        mmr_pos=mmr_pos,
     );
+
     local account_160;
     local block;
     %{
@@ -243,9 +306,25 @@ func test_prove_account{syscall_ptr: felt*, range_check_ptr}() {
 }
 
 @external
-func test_get_storage{syscall_ptr: felt*, range_check_ptr}() {
+func test_get_storage{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     alloc_locals;
-    registry_initialized();
+    let (local mmr_peaks: felt*) = alloc();
+    let (pedersen_hash) = registry_initialized();
+    let (node1) = hash2{hash_ptr=pedersen_ptr}(1, pedersen_hash);
+    assert mmr_peaks[0] = node1;
+    let (local block_proof: felt*) = alloc();
+
+    let (block_header_rlp: felt*) = alloc();
+    local block_header_rlp_len;
+    local block_header_rlp_bytes_len;
+    %{
+        # Retrieve from ctxt
+        segments.write_arg(ids.block_header_rlp, context.saved_block_header_rlp.values)
+        ids.block_header_rlp_len = context.saved_block_header_rlp_len
+        ids.block_header_rlp_bytes_len = context.saved_block_header_rlp_bytes_len
+    %}
+    local l1_headers_store;
+    %{ ids.l1_headers_store = context.l1_headers_store_addr %}
     local facts_registry;
     %{ ids.facts_registry = context.facts_registry %}
     local options_set;
@@ -287,6 +366,8 @@ func test_get_storage{syscall_ptr: felt*, range_check_ptr}() {
         segments.write_arg(ids.proofs_concat, flat_proof)
     %}
     local account: Address = Address(account_word_1, account_word_2, account_word_3);
+    let (info) = get_tx_info();
+    let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
     FactsRegistry.prove_account(
         contract_address=facts_registry,
         options_set=options_set,
@@ -298,6 +379,17 @@ func test_get_storage{syscall_ptr: felt*, range_check_ptr}() {
         proof_sizes_words=proof_sizes_words,
         proofs_concat_len=proofs_concat_len,
         proofs_concat=proofs_concat,
+        block_proof_leaf_index=1,
+        block_proof_leaf_value=pedersen_hash,
+        block_proof_len=0,
+        block_proof=block_proof,
+        block_proof_peaks_len=1,
+        block_proof_peaks=mmr_peaks,
+        block_header_rlp_len=block_header_rlp_len,
+        block_header_rlp=block_header_rlp,
+        block_header_rlp_bytes_len=block_header_rlp_bytes_len,
+        inclusion_tx_hash=info.transaction_hash,
+        mmr_pos=mmr_pos,
     );
     local slot_word1;
     local slot_word2;
@@ -359,9 +451,25 @@ func test_get_storage{syscall_ptr: felt*, range_check_ptr}() {
 }
 
 @external
-func test_get_storage_uint{syscall_ptr: felt*, range_check_ptr}() {
+func test_get_storage_uint{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     alloc_locals;
-    registry_initialized();
+    let (local mmr_peaks: felt*) = alloc();
+    let (pedersen_hash) = registry_initialized();
+    let (node1) = hash2{hash_ptr=pedersen_ptr}(1, pedersen_hash);
+    assert mmr_peaks[0] = node1;
+    let (local block_proof: felt*) = alloc();
+
+    let (block_header_rlp: felt*) = alloc();
+    local block_header_rlp_len;
+    local block_header_rlp_bytes_len;
+    %{
+        # Retrieve from ctxt
+        segments.write_arg(ids.block_header_rlp, context.saved_block_header_rlp.values)
+        ids.block_header_rlp_len = context.saved_block_header_rlp_len
+        ids.block_header_rlp_bytes_len = context.saved_block_header_rlp_bytes_len
+    %}
+    local l1_headers_store;
+    %{ ids.l1_headers_store = context.l1_headers_store_addr %}
     local facts_registry;
     %{ ids.facts_registry = context.facts_registry %}
     local options_set;
@@ -403,6 +511,8 @@ func test_get_storage_uint{syscall_ptr: felt*, range_check_ptr}() {
         segments.write_arg(ids.proofs_concat, flat_proof)
     %}
     local account: Address = Address(account_word_1, account_word_2, account_word_3);
+    let (info) = get_tx_info();
+    let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
     FactsRegistry.prove_account(
         contract_address=facts_registry,
         options_set=options_set,
@@ -414,6 +524,17 @@ func test_get_storage_uint{syscall_ptr: felt*, range_check_ptr}() {
         proof_sizes_words=proof_sizes_words,
         proofs_concat_len=proofs_concat_len,
         proofs_concat=proofs_concat,
+        block_proof_leaf_index=1,
+        block_proof_leaf_value=pedersen_hash,
+        block_proof_len=0,
+        block_proof=block_proof,
+        block_proof_peaks_len=1,
+        block_proof_peaks=mmr_peaks,
+        block_header_rlp_len=block_header_rlp_len,
+        block_header_rlp=block_header_rlp,
+        block_header_rlp_bytes_len=block_header_rlp_bytes_len,
+        inclusion_tx_hash=info.transaction_hash,
+        mmr_pos=mmr_pos,
     );
     local slot_word1;
     local slot_word2;

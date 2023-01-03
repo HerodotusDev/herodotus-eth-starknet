@@ -9,6 +9,7 @@ Herodotus is built out of the following components:
 - L1 messaging contracts
 - L2 contract receiving L1 messages
 - L2 contract storing and processing L1 block headers
+- L2 state roots contracts to process state roots
 - Facts registry which stores the proven facts
 
 ![alt text](https://github.com/marcellobardus/starknet-l2-storage-verifier/blob/master/.github/storage-verifier.png?raw=true)
@@ -16,7 +17,7 @@ _Storage Verifier Flow diagram_
 
 ## Testing
 
-In order to run the tests, please make sure to have a python 3.7 virtual environment.
+In order to run the tests, please make sure to have [Protostar](https://docs.swmansion.com/protostar) installed.
 
 ## Herodotus API
 
@@ -48,17 +49,17 @@ curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/inst
 To install dependencies:
 
 ```bash
- protostar install
+protostar install
 ```
 
 ## Building and running tests
 
 ```bash
- protostar build
+protostar build
 ```
 
 To run the tests:
 
 ```bash
- protostar test tests/
+protostar test
 ```

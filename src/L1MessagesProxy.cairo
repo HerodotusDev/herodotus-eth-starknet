@@ -18,7 +18,7 @@ namespace IL1HeadersStore {
     func receive_from_l1(parent_hash_len: felt, parent_hash: felt*, block_number: felt) {
     }
 
-    func get_parent_hash(block_number: felt) -> (res: Keccak256Hash) {
+    func get_commitments_parent_hash(block_number: felt) -> (res: Keccak256Hash) {
     }
 }
 
@@ -412,7 +412,7 @@ func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check
     let (contract_addr) = _l1_headers_store_addr.read();
 
     // Check if message was relayed optimistically
-    let (local optimistic_message) = IL1HeadersStore.get_parent_hash(
+    let (local optimistic_message) = IL1HeadersStore.get_commitments_parent_hash(
         contract_address=contract_addr, block_number=block_number
     );
     local exising_blockhash = optimistic_message.word_1 + optimistic_message.word_2 + optimistic_message.word_3 + optimistic_message.word_4;

@@ -9,6 +9,7 @@ Account = ["src/external/Account.cairo"]
 FactsRegistry = ["src/FactsRegistry.cairo"]
 L1HeadersStore = ["src/L1HeadersStore.cairo"]
 L1MessagesProxy = ["src/L1MessagesProxy.cairo"]
+L2StateRootsProcessor = ["src/L2StateRootsProcessor.cairo"]
 TWAP = ["src/TWAP.cairo"]
 
 [test]
