@@ -91,7 +91,7 @@ func __setup__{syscall_ptr: felt*, range_check_ptr}() {
         priv_key = 12345678
         pub_key = private_to_stark_key(priv_key)
         context.relayer_pub_key = pub_key
-        context.l1_headers_store_addr = deploy_contract("src/L1HeadersStore.cairo", [pub_key]).contract_address
+        context.l1_headers_store_addr = deploy_contract("src/connections/ethereum/HeadersStore.cairo", [pub_key]).contract_address
     %}
     return ();
 }
