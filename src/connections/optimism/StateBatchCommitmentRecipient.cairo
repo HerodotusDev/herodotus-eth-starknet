@@ -9,7 +9,8 @@ from lib.types import Keccak256Hash, IntsSequence, Address, RLPItem, reconstruct
 from lib.blockheader_rlp_extractor import decode_receipts_root
 from lib.trie_proofs import verify_proof
 from lib.bytes import remove_leading_byte
-from lib.extract_from_rlp import to_list
+from lib.extract_from_rlp import to_list, extract_data
+from lib.bitshift import bitshift_right, bitshift_left
 
 @contract_interface
 namespace IEthereumHeadersStore {
@@ -121,6 +122,44 @@ func verify_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_p
     let (local valid_receipt_rlp: IntsSequence) = remove_leading_byte(receipt_tree_leaf);
     let (local receipt_list: RLPItem*, list_len) = to_list(valid_receipt_rlp);
 
+    let (local tx_status: IntsSequence) = extract_data(
+        receipt_list[0].dataPosition, receipt_list[0].length, valid_receipt_rlp
+    );
+    assert tx_status.element[0] = 1;
+
+    let (local logs_rlp: IntsSequence) = extract_data(
+        receipt_list[3].dataPosition, receipt_list[3].length, valid_receipt_rlp
+    );
+    let (local logs_elements: RLPItem*, list_len) = to_list(logs_rlp);
+
+    let (local recipient: IntsSequence) =  extract_data(
+        logs_elements[0].dataPosition, logs_elements[0].length, logs_rlp
+    );
+    let (local expected_recipient) = _state_commitment_chain_addr.read();
+
+    assert recipient.element[0] = expected_recipient.word_1;
+    assert recipient.element[1] = expected_recipient.word_2;
+    assert recipient.element[2] = expected_recipient.word_3;
+
+    let (local event_topics: IntsSequence) =  extract_data(
+        logs_elements[1].dataPosition, logs_elements[1].length, logs_rlp
+    );
+
+    let (local event_selector: IntsSequence) = decode_event_selector_from_log_topic(event_topics);
+    assert event_selector.element[0] = 0x16be4c5129a4e03c;
+    assert event_selector.element[1] = 0xf3350262e181dc02;
+    assert event_selector.element[2] = 0xddfb4a6008d92536;
+    assert event_selector.element[3] = 0x8c0899fcd97ca9c5;
+
+    let (local batch_index: felt) = decode_batch_index_from_log_topic(event_topics);
+
+    let (local log_data: IntsSequence) = extract_data(
+        logs_elements[2].dataPosition, logs_elements[2].length, logs_rlp
+    );
+    let (local batch_root: Keccak256Hash) = decode_batch_root_from_log_data(log_data);
+
+    _batch_roots.write(batch_index, batch_root);
+
     return ();
 }
 
@@ -134,5 +173,36 @@ func receive_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
 func relay_batch_root_optimistic{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 ) {
     return ();
+}
+
+func decode_event_selector_from_log_topic{
+    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(topic: IntsSequence) -> (event_selector: IntsSequence) {
+    alloc_locals;
+    local preprocessed: IntsSequence = IntsSequence(topic.element, 5, 33); 
+    let (local topic_no_abi_len: IntsSequence) = remove_leading_byte(preprocessed);
+
+    let (local res_words) = alloc();
+    assert res_words[0] = topic_no_abi_len.element[0];
+    assert res_words[1] = topic_no_abi_len.element[1];
+    assert res_words[2] = topic_no_abi_len.element[2];
+    assert res_words[3] = topic_no_abi_len.element[3];
+
+    local res: IntsSequence = IntsSequence(res_words, 4, 32);
+    return (res, );
+}
+
+func decode_batch_index_from_log_topic{
+    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(topic: IntsSequence) -> (batch_index: felt) {
+    return (topic.element[7], );
+}
+
+func decode_batch_root_from_log_data{
+    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(log_data: IntsSequence) -> (batch_root: Keccak256Hash) {
+    alloc_locals;
+    local res: Keccak256Hash = Keccak256Hash(log_data.element[0], log_data.element[1], log_data.element[2], log_data.element[3]);
+    return (res, );
 }
 
