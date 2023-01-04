@@ -54,7 +54,8 @@ class Data:
     @staticmethod
     def from_hex(input: str) -> Data:
         prefixed = input[0:2] == '0x'
-        return Data(bytes.fromhex(input[2:] if prefixed else input))
+        value = input[2:] if prefixed else input
+        return Data(bytes.fromhex(value if len(value) > 1 else "0" + value))
 
     @staticmethod
     def from_int(input: int) -> Data:
