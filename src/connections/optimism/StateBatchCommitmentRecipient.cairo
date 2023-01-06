@@ -175,6 +175,14 @@ func relay_batch_root_optimistic{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*,
     return ();
 }
 
+@view
+func get_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    batch_index: felt
+) -> (batch_root: Keccak256Hash) {
+    let (batch_root: Keccak256Hash) = _batch_roots.read(batch_index);
+    return (batch_root,);
+}
+
 func decode_event_selector_from_log_topic{
     pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(topic: IntsSequence) -> (event_selector: IntsSequence) {

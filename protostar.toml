@@ -15,6 +15,7 @@ EthereumBlockhashesRecipient = ["src/connections/ethereum/BlockhashesRecipient.c
 StarknetStateRootsProcessor = ["src/connections/starknet/StateRootsProcessor.cairo"]
 
 OptimismStateBatchCommitmentRecipient = ["src/connections/optimism/StateBatchCommitmentRecipient.cairo"]
+OptimismStateBatchProcessor = ["src/connections/optimism/StateBatchProcessor.cairo"]
 
 
 
