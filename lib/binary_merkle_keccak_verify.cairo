@@ -8,7 +8,7 @@ from lib.unsafe_keccak import keccak256
 from starkware.cairo.common.cairo_keccak.keccak import finalize_keccak
 
 
-const position_hint_symbol = 0xffffffffffffffff;
+const POSITION_HINT_SYMBOL = 0xffffffffffffffff;
 
 func merkle_keccak_verify{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     root: Keccak256Hash,
@@ -60,11 +60,6 @@ func merkle_keccak_verify{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 
     let (local is_root_matched) = arr_eq(root_words, 4, final_sibling_words, 4);
 
-    %{
-        print("actual root: ", list(map(lambda x: hex(x), memory.get_range(ids.final_sibling_words, 4))))
-        print("expected root: ", list(map(lambda x: hex(x), memory.get_range(ids.root_words, 4))))
-    %}
-
     assert is_root_matched = 1;
     return ();
 }
@@ -79,48 +74,31 @@ func merkle_keccak_verify_rec{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, kec
 ) {
     alloc_locals;
 
-    %{
-        print("proof_len: ", ids.proof_len)
-        print("next_element_start: ", ids.next_element_start)
-    %}
-
     if(next_element_start == proof_len - 1) {
         return (current_sibling, );
     }
 
     let (local current_row_hash_words: felt*) = alloc();
-    local is_left_sibling = position_hint_symbol - proof[next_element_start] + 1;
+    local is_left_sibling = POSITION_HINT_SYMBOL - proof[next_element_start] + 1;
 
     local debug = proof[next_element_start];
 
-    %{
-        print("debug: ", hex(ids.debug))
-        print("current_index: ", ids.current_index)
-        print("next_element_start: ", ids.next_element_start)
-        print("is_left_sibling: ", ids.is_left_sibling)
-        print("proof: ", list(map(lambda x: hex(x), memory.get_range(ids.proof, ids.proof_len))))
-    %}
-
     local next_element_jump;
-
     if(is_left_sibling == 1) {
         assert current_row_hash_words[0] = current_sibling.word_1;
         assert current_row_hash_words[1] = current_sibling.word_2;
         assert current_row_hash_words[2] = current_sibling.word_3;
         assert current_row_hash_words[3] = current_sibling.word_4;
 
-        assert current_row_hash_words[4] = proof[next_element_start];
-        assert current_row_hash_words[5] = proof[next_element_start + 1];
-        assert current_row_hash_words[6] = proof[next_element_start + 2];
-        assert current_row_hash_words[7] = proof[next_element_start + 3];
+        assert current_row_hash_words[4] = proof[next_element_start + 1];
+        assert current_row_hash_words[5] = proof[next_element_start + 2];
+        assert current_row_hash_words[6] = proof[next_element_start + 3];
+        assert current_row_hash_words[7] = proof[next_element_start + 4];
 
         next_element_jump = 5;
     } else {
         local separator = proof[next_element_start + 4];
-        %{
-            print("separator: ", hex(ids.separator))
-        %}
-        assert separator = position_hint_symbol;
+        assert separator = POSITION_HINT_SYMBOL;
 
         assert current_row_hash_words[0] = proof[next_element_start];
         assert current_row_hash_words[1] = proof[next_element_start + 1];
@@ -143,10 +121,6 @@ func merkle_keccak_verify_rec{range_check_ptr, bitwise_ptr: BitwiseBuiltin*, kec
         keccak_output_words[2],
         keccak_output_words[3]
     );
-
-    %{
-        print("\n")
-    %}
 
     return merkle_keccak_verify_rec(
         root,

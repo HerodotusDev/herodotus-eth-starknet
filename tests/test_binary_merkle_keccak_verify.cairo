@@ -29,12 +29,12 @@ func test_verify_valid_proof{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}() ->
         segments.write_arg(ids.proof, input)
         ids.proof_len = len(input)
     %}
-    // 19 BE 2A 01 F9 CB DD B7 CF 3C 6C 59 F5 84 49 B8 42 52 24 1E 39 57 2E 91 5E 0F 59 B3 07 43 3A AA
+    // 27 32 c8 ed 62 44 9a e3 4e b7 23 97 af d9 ec e2 70 a9 ad 5b 1e 18 93 69 b9 98 c5 ba a4 75 5d cf
     local expected_root: Keccak256Hash = Keccak256Hash(
-        0x19BE2A01F9CBDDB7,
-        0xCF3C6C59F58449B8,
-        0x4252241E39572E91,
-        0x5E0F59B307433AAA
+        0x2732c8ed62449ae3,
+        0x4eb72397afd9ece2,
+        0x70a9ad5b1e189369,
+        0xb998c5baa4755dcf
     );
 
     merkle_keccak_verify(expected_root, proof_len, proof);
