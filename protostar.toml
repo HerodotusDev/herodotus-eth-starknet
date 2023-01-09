@@ -14,3 +14,8 @@ TWAP = ["src/TWAP.cairo"]
 
 [test]
 disable-hint-validation = true
+
+[profile.testnet.project]
+account-address = "0x01c438231cd70f47d1acb8404e51734c1fb4d79ac55813b3e861fb1ef78da0d6"
+block-explorer = "starkscan"
+network = "testnet"
