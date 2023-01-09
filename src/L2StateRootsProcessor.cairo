@@ -119,7 +119,9 @@ func process_state_root{
         mmr_pos=mmr_inclusion_header_pos,
     );
 
-    local block_header: IntsSequence = IntsSequence(l1_header_rlp, l1_header_rlp_len, l1_header_rlp_bytes_len);
+    local block_header: IntsSequence = IntsSequence(
+        l1_header_rlp, l1_header_rlp_len, l1_header_rlp_bytes_len
+    );
     let (local decoded_receipts_root: Keccak256Hash) = decode_receipts_root(block_header);
     let (receipts_root_words: felt*) = alloc();
     assert receipts_root_words[0] = decoded_receipts_root.word_1;
@@ -171,11 +173,8 @@ func process_state_root{
     assert recipient.element[2] = 0x8626708e;
 
     local state_root_pedersen: PedersenHash = PedersenHash(
-        state_root.element[0],
-        state_root.element[1],
-        state_root.element[2],
-        state_root.element[3]
-        );
+        state_root.element[0], state_root.element[1], state_root.element[2], state_root.element[3]
+    );
 
     _state_roots.write(block_number, state_root_pedersen);
     return ();

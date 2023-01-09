@@ -248,7 +248,9 @@ func prove_account{
 
     assert pedersen_hash = block_proof_leaf_value;
 
-    local rlp: IntsSequence = IntsSequence(block_header_rlp, block_header_rlp_len, block_header_rlp_bytes_len);
+    local rlp: IntsSequence = IntsSequence(
+        block_header_rlp, block_header_rlp_len, block_header_rlp_bytes_len
+    );
     let (local state_root_raw: Keccak256Hash) = decode_state_root(rlp);
 
     assert_not_zero(state_root_raw.word_1);
@@ -292,7 +294,8 @@ func prove_account{
             result_values[2].element[0],
             result_values[2].element[1],
             result_values[2].element[2],
-            result_values[2].element[3]);
+            result_values[2].element[3],
+        );
         _verified_account_storage_hash.write(address_160, block_number, storage_hash);
         tempvar syscall_ptr = syscall_ptr;
         tempvar range_check_ptr = range_check_ptr;
@@ -313,7 +316,8 @@ func prove_account{
             result_values[3].element[0],
             result_values[3].element[1],
             result_values[3].element[2],
-            result_values[3].element[3]);
+            result_values[3].element[3],
+        );
         _verified_account_code_hash.write(address_160, block_number, code_hash);
         tempvar syscall_ptr = syscall_ptr;
         tempvar range_check_ptr = range_check_ptr;
@@ -503,7 +507,9 @@ func get_storage_uint{
         proofs_concat,
     );
 
-    local res_ints_sequence: IntsSequence = IntsSequence(ints_res, ints_res_len, ints_res_bytes_len);
+    local res_ints_sequence: IntsSequence = IntsSequence(
+        ints_res, ints_res_len, ints_res_bytes_len
+    );
     let (local result_raw) = ints_to_uint256(res_ints_sequence);
     local result: Uint256 = Uint256(result_raw.low, result_raw.high);
     return (result,);

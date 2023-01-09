@@ -98,11 +98,8 @@ func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check
 
     // Save block's parenthash
     local hash: Keccak256Hash = Keccak256Hash(
-        word_1=parent_hash[0],
-        word_2=parent_hash[1],
-        word_3=parent_hash[2],
-        word_4=parent_hash[3]
-        );
+        word_1=parent_hash[0], word_2=parent_hash[1], word_3=parent_hash[2], word_4=parent_hash[3]
+    );
     _commitments_block_parent_hash.write(block_number, hash);
 
     let (local current_latest) = _commitments_latest_l1_block.read();
@@ -393,10 +390,14 @@ func validate_parent_block{
 ) {
     alloc_locals;
 
-    local child_rlp: IntsSequence = IntsSequence(child_header_rlp, child_header_rlp_len, child_header_rlp_bytes_len);
+    local child_rlp: IntsSequence = IntsSequence(
+        child_header_rlp, child_header_rlp_len, child_header_rlp_bytes_len
+    );
     let (local child_block_parent_hash: Keccak256Hash) = decode_parent_hash(child_rlp);
 
-    local parent_rlp: IntsSequence = IntsSequence(parent_header_rlp, parent_header_rlp_len, parent_header_rlp_bytes_len);
+    local parent_rlp: IntsSequence = IntsSequence(
+        parent_header_rlp, parent_header_rlp_len, parent_header_rlp_bytes_len
+    );
 
     validate_provided_header_rlp(
         child_block_parent_hash,
@@ -462,7 +463,9 @@ func validate_parent_block_and_proof_integrity{
         mmr_pos=mmr_pos,
     );
 
-    local rlp: IntsSequence = IntsSequence(reference_header_rlp, reference_header_rlp_len, reference_header_rlp_bytes_len);
+    local rlp: IntsSequence = IntsSequence(
+        reference_header_rlp, reference_header_rlp_len, reference_header_rlp_bytes_len
+    );
     let (local child_block_parent_hash: Keccak256Hash) = decode_parent_hash(rlp);
     validate_provided_header_rlp(
         child_block_parent_hash, block_header_rlp_bytes_len, block_header_rlp_len, block_header_rlp
@@ -507,7 +510,9 @@ func update_mmr{
     let (local keccak_ptr: felt*) = alloc();
     let keccak_ptr_start = keccak_ptr;
 
-    local header_ints_sequence: IntsSequence = IntsSequence(block_header_rlp, block_header_rlp_len, block_header_rlp_bytes_len);
+    local header_ints_sequence: IntsSequence = IntsSequence(
+        block_header_rlp, block_header_rlp_len, block_header_rlp_bytes_len
+    );
     let (local processed_block_number: felt) = decode_block_number(header_ints_sequence);
 
     let (local keccak_hash) = keccak256{keccak_ptr=keccak_ptr}(header_ints_sequence);
@@ -635,7 +640,9 @@ func validate_provided_header_rlp{
     let (local keccak_ptr: felt*) = alloc();
     let keccak_ptr_start = keccak_ptr;
 
-    local header_ints_sequence: IntsSequence = IntsSequence(block_header_rlp, block_header_rlp_len, block_header_rlp_bytes_len);
+    local header_ints_sequence: IntsSequence = IntsSequence(
+        block_header_rlp, block_header_rlp_len, block_header_rlp_bytes_len
+    );
 
     let (provided_rlp_hash) = keccak256{keccak_ptr=keccak_ptr}(header_ints_sequence);
     // finalize_keccak(keccak_ptr_start, keccak_ptr)

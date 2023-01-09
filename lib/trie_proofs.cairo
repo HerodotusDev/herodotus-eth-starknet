@@ -17,7 +17,9 @@ from lib.types import Keccak256Hash, IntsSequence, RLPItem
 
 // TODO check for safety
 func is_empty_keccak(input: IntsSequence) -> (res: felt) {
-    let not_empty = (input.element[0] - 6262289465969759654) * (input.element[1] - 18411636558227634286) * (input.element[2] - 6577753664917384640) * (input.element[3] - 99694600006120481);
+    let not_empty = (input.element[0] - 6262289465969759654) * (
+        input.element[1] - 18411636558227634286
+    ) * (input.element[2] - 6577753664917384640) * (input.element[3] - 99694600006120481);
     if (not_empty == 0) {
         return (1,);
     } else {

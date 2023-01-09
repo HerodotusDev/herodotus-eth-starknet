@@ -166,13 +166,8 @@ func execute{
     local _current_nonce = _current_nonce;
 
     local message: Message = Message(
-        _address,
-        to,
-        selector,
-        calldata,
-        calldata_size=calldata_len,
-        _current_nonce
-        );
+        _address, to, selector, calldata, calldata_size=calldata_len, _current_nonce
+    );
 
     // validate transaction
     let (hash) = hash_message(&message);

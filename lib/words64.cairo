@@ -13,7 +13,7 @@ func extract_byte{range_check_ptr}(word: felt, word_len_bytes: felt, position: f
     alloc_locals;
     assert_le(position, word_len_bytes - 1);  // Ensures that the extracted byte is not out of word range
     local tailcut_shift = (word_len_bytes - 1 - position) * 8;
-    let (local removed_tail) = bitshift_right(word, tailcut_shift); 
+    let (local removed_tail) = bitshift_right(word, tailcut_shift);
     local headcut_shift = (word_len_bytes - position) * 8;
     if (headcut_shift == 64) {
         return (removed_tail,);

@@ -415,7 +415,8 @@ func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check
     let (local optimistic_message) = IL1HeadersStore.get_commitments_parent_hash(
         contract_address=contract_addr, block_number=block_number
     );
-    local exising_blockhash = optimistic_message.word_1 + optimistic_message.word_2 + optimistic_message.word_3 + optimistic_message.word_4;
+    local exising_blockhash = optimistic_message.word_1 + optimistic_message.word_2 +
+        optimistic_message.word_3 + optimistic_message.word_4;
     local overrides_optimistic = is_not_zero(exising_blockhash);
 
     local parent_hash_as_keccak: Keccak256Hash = Keccak256Hash(
@@ -423,7 +424,7 @@ func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check
         word_2=parent_hash_word_2,
         word_3=parent_hash_word_3,
         word_4=parent_hash_word_4,
-        );
+    );
 
     if (overrides_optimistic == 1) {
         let (local was_message_correct) = keccak_compare(parent_hash_as_keccak, optimistic_message);

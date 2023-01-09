@@ -68,11 +68,8 @@ func test_keccak256_std{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     );
     finalize_keccak(keccak_ptr_start=keccak_ptr_start, keccak_ptr_end=keccak_ptr);
     local hash: Keccak256Hash = Keccak256Hash(
-        word_1=keccak_hash[0],
-        word_2=keccak_hash[1],
-        word_3=keccak_hash[2],
-        word_4=keccak_hash[3]
-        );
+        word_1=keccak_hash[0], word_2=keccak_hash[1], word_3=keccak_hash[2], word_4=keccak_hash[3]
+    );
     return (hash,);
 }
 
@@ -147,12 +144,16 @@ func test_keccak256_std_multiple{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     let (local keccak_ptr: felt*) = alloc();
     let keccak_ptr_start = keccak_ptr;
 
-    local input_ints_sequence_1: IntsSequence = IntsSequence(input_1, input_1_len, keccak_input_1_length);
+    local input_ints_sequence_1: IntsSequence = IntsSequence(
+        input_1, input_1_len, keccak_input_1_length
+    );
     let (keccak_hash_1) = keccak_as_words{keccak_ptr=keccak_ptr}(
         input_ints_sequence_1.element, input_ints_sequence_1.element_size_bytes
     );
 
-    local input_ints_sequence_2: IntsSequence = IntsSequence(input_2, input_2_len, keccak_input_2_length);
+    local input_ints_sequence_2: IntsSequence = IntsSequence(
+        input_2, input_2_len, keccak_input_2_length
+    );
     let (keccak_hash_2) = keccak_as_words{keccak_ptr=keccak_ptr}(
         input_ints_sequence_2.element, input_ints_sequence_2.element_size_bytes
     );
@@ -163,15 +164,15 @@ func test_keccak256_std_multiple{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
         word_1=keccak_hash_1[0],
         word_2=keccak_hash_1[1],
         word_3=keccak_hash_1[2],
-        word_4=keccak_hash_1[3]
-        );
+        word_4=keccak_hash_1[3],
+    );
 
     local hash_2: Keccak256Hash = Keccak256Hash(
         word_1=keccak_hash_2[0],
         word_2=keccak_hash_2[1],
         word_3=keccak_hash_2[2],
-        word_4=keccak_hash_2[3]
-        );
+        word_4=keccak_hash_2[3],
+    );
 
     return (hash_1, hash_2);
 }
@@ -223,11 +224,8 @@ func test_keccak256_std_be{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     let (local result) = keccak256_auto_finalize{keccak_ptr=keccak_ptr}(input_be);
 
     local hash: Keccak256Hash = Keccak256Hash(
-        word_1=result[0],
-        word_2=result[1],
-        word_3=result[2],
-        word_4=result[3]
-        );
+        word_1=result[0], word_2=result[1], word_3=result[2], word_4=result[3]
+    );
 
     return (hash,);
 }

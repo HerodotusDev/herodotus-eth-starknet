@@ -551,7 +551,9 @@ func test_verify_proof{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
 ) -> (res_size_bytes: felt, res_len: felt, res: felt*) {
     alloc_locals;
     local path_arg: IntsSequence = IntsSequence(path, path_len, path_size_bytes);
-    local root_hash_arg: IntsSequence = IntsSequence(root_hash, root_hash_len, root_hash_size_bytes);
+    local root_hash_arg: IntsSequence = IntsSequence(
+        root_hash, root_hash_len, root_hash_size_bytes
+    );
 
     let (local proof_arg: IntsSequence*) = alloc();
     reconstruct_ints_sequence_list(

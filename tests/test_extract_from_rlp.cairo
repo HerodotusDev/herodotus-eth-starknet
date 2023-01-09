@@ -479,7 +479,11 @@ func construct_rlp_items_arr{range_check_ptr}(
         return ();
     }
 
-    assert acc[current_index] = RLPItem(rlp_items_first_bytes[current_index], rlp_items_data_positions[current_index], rlp_items_lenghts[current_index]);
+    assert acc[current_index] = RLPItem(
+        rlp_items_first_bytes[current_index],
+        rlp_items_data_positions[current_index],
+        rlp_items_lenghts[current_index],
+    );
 
     return construct_rlp_items_arr(
         rlp_items_first_bytes=rlp_items_first_bytes,

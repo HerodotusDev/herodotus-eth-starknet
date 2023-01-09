@@ -75,7 +75,8 @@ func reconstruct_ints_sequence_list{range_check_ptr}(
     assert acc[current_index] = IntsSequence(
         current_sequence_element_acc,
         elements_sizes_words[current_index],
-        elements_sizes_bytes[current_index]);
+        elements_sizes_bytes[current_index],
+    );
 
     return reconstruct_ints_sequence_list(
         elements_concat,

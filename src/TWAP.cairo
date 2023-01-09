@@ -155,7 +155,8 @@ func compute{
     let (local current_block_hash_word_3_tmp) = _twap_computation_cache.read(computation_id, 5);
     let (local current_block_hash_word_4_tmp) = _twap_computation_cache.read(computation_id, 6);
 
-    local current_block_hash_empty = current_block_hash_word_1_tmp + current_block_hash_word_2_tmp + current_block_hash_word_3_tmp + current_block_hash_word_4_tmp;
+    local current_block_hash_empty = current_block_hash_word_1_tmp + current_block_hash_word_2_tmp +
+        current_block_hash_word_3_tmp + current_block_hash_word_4_tmp;
 
     local current_block_hash_word_1;
     local current_block_hash_word_2;
@@ -200,7 +201,8 @@ func compute{
         current_block_hash_word_1,
         current_block_hash_word_2,
         current_block_hash_word_3,
-        current_block_hash_word_4);
+        current_block_hash_word_4,
+    );
 
     let (local keccak_ptr: felt*) = alloc();
     let keccak_ptr_start = keccak_ptr;
@@ -299,7 +301,11 @@ func compute_rec{
 
     local bitwise_ptr: BitwiseBuiltin* = bitwise_ptr;
 
-    local current_header_ints_sequence: IntsSequence = IntsSequence(current_header, block_headers_lens_words[current_index], block_headers_lens_bytes[current_index]);
+    local current_header_ints_sequence: IntsSequence = IntsSequence(
+        current_header,
+        block_headers_lens_words[current_index],
+        block_headers_lens_bytes[current_index],
+    );
 
     let (provided_rlp_hash) = keccak256{keccak_ptr=keccak_ptr}(current_header_ints_sequence);
 
@@ -308,7 +314,11 @@ func compute_rec{
     assert current_parent_hash.word_3 = provided_rlp_hash[2];
     assert current_parent_hash.word_4 = provided_rlp_hash[3];
 
-    local current_header_rlp: IntsSequence = IntsSequence(current_header, block_headers_lens_words[current_index], block_headers_lens_bytes[current_index]);
+    local current_header_rlp: IntsSequence = IntsSequence(
+        current_header,
+        block_headers_lens_words[current_index],
+        block_headers_lens_bytes[current_index],
+    );
     let (local parent_hash: Keccak256Hash) = decode_parent_hash(current_header_rlp);
 
     let (local param) = retrieve_param(current_header_rlp, avg_header_param);

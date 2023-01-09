@@ -62,11 +62,8 @@ func test_keccak256{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
     let (keccak_hash) = keccak256{keccak_ptr=keccak_ptr}(input_ints_sequence);
 
     local hash: Keccak256Hash = Keccak256Hash(
-        word_1=keccak_hash[0],
-        word_2=keccak_hash[1],
-        word_3=keccak_hash[2],
-        word_4=keccak_hash[3]
-        );
+        word_1=keccak_hash[0], word_2=keccak_hash[1], word_3=keccak_hash[2], word_4=keccak_hash[3]
+    );
 
     return (hash,);
 }
