@@ -40,7 +40,7 @@ func _batch_roots(batch_index: felt) -> (root: Keccak256Hash) {
 }
 
 @storage_var
-func _batch_starts_at_element(batch_index: felt) -> (start_at_element: felt) {
+func _batch_start(batch_index: felt) -> (start_at_element: felt) {
 }
 
 @constructor
@@ -165,7 +165,7 @@ func verify_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_p
     let (local batch_should_start_at_element: felt) = decode_batch_start_element_index_from_log_data(log_data);
 
     _batch_roots.write(batch_index, batch_root);
-    _batch_starts_at_element.write(batch_index, batch_should_start_at_element);
+    _batch_start.write(batch_index, batch_should_start_at_element);
 
     return ();
 }
@@ -188,6 +188,14 @@ func get_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_
 ) -> (batch_root: Keccak256Hash) {
     let (batch_root: Keccak256Hash) = _batch_roots.read(batch_index);
     return (batch_root,);
+}
+
+@view
+func get_batch_start_index{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    batch_index: felt
+) -> (batch_start: felt) {
+    let (batch_start: felt) = _batch_start.read(batch_index);
+    return (batch_start,);
 }
 
 func decode_event_selector_from_log_topic{
