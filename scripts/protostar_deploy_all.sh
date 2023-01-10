@@ -1,16 +1,15 @@
 #!/bin/bash
 
 if [[ $* == *"--skip-build"* ]]; then
-  echo "Skipping protostar build"
+    echo "Skipping protostar build"
 else
-  protostar build
-  if [ $? -eq 0 ]; then
-    echo "Build succeeded\n"
-  else
-    echo "Build failed" && exit
-  fi
+    protostar build
+    if [ $? -eq 0 ]; then
+        echo "Build succeeded"
+    else
+        echo "Build failed" && exit
+    fi
 fi
-
 
 echo "Declaring contracts..."
 
@@ -31,3 +30,5 @@ l1_facts_registry_addr=$(protostar -p testnet deploy $class_hash_l1_facts_regist
 printf "L1MessagesProxy contract address: %s\nL1HeadersStore contract address: %s\nL1FactsRegistry contract address: %s\n" "$l1_messages_proxy_addr" "$l1_headers_store_addr" "$l1_facts_registry_addr"
 
 echo "Note: do not forget to initialize the L1MessagesProxy contract at "$l1_messages_proxy_addr" manually"
+
+exit 0
