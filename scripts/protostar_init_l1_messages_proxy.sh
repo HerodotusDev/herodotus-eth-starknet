@@ -54,7 +54,7 @@ echo "required_in_asset_to_relay: $required_in_asset_to_relay"
 
 inputs="l1_messages_sender=$l1_messages_sender l1_headers_store_addr=$l1_headers_store_addr owner=$owner relay_asset_addr=$relay_asset_addr required_in_asset_to_relay=$required_in_asset_to_relay"
 
-invokation=$(protostar -p testnet invoke --function "initialize" --contract-address "0x042e530b1f6717e3f90359881b58232954732b0b5b25793f64a06a94d8e24de2" --inputs $inputs --max-fee auto --wait-for-acceptance --json)
+invokation=$(protostar -p testnet invoke --function "initialize" --contract-address $contract_address --inputs $inputs --max-fee auto --wait-for-acceptance --json)
 
 echo $invokation
 
