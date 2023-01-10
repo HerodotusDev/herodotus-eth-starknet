@@ -39,6 +39,10 @@ func _state_commitment_chain_addr() -> (res: Address) {
 func _batch_roots(batch_index: felt) -> (root: Keccak256Hash) {
 }
 
+@storage_var
+func _batch_starts_at_element(batch_index: felt) -> (start_at_element: felt) {
+}
+
 @constructor
 func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     ethereum_headers_store_addr: felt,
@@ -156,9 +160,12 @@ func verify_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_p
     let (local log_data: IntsSequence) = extract_data(
         logs_elements[2].dataPosition, logs_elements[2].length, logs_rlp
     );
+
     let (local batch_root: Keccak256Hash) = decode_batch_root_from_log_data(log_data);
+    let (local batch_should_start_at_element: felt) = decode_batch_start_element_index_from_log_data(log_data);
 
     _batch_roots.write(batch_index, batch_root);
+    _batch_starts_at_element.write(batch_index, batch_should_start_at_element);
 
     return ();
 }
@@ -211,6 +218,14 @@ func decode_batch_root_from_log_data{
 }(log_data: IntsSequence) -> (batch_root: Keccak256Hash) {
     alloc_locals;
     local res: Keccak256Hash = Keccak256Hash(log_data.element[0], log_data.element[1], log_data.element[2], log_data.element[3]);
+    return (res, );
+}
+
+func decode_batch_start_element_index_from_log_data{
+    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(log_data: IntsSequence) -> (start_element_index: felt) {
+    alloc_locals;
+    local res: felt = log_data.element[11];
     return (res, );
 }
 
