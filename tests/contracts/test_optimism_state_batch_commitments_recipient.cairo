@@ -69,7 +69,7 @@ func __setup__{syscall_ptr: felt*, range_check_ptr}() {
         context.ethereum_headers_store_addr = deploy_contract("src/connections/ethereum/HeadersStore.cairo", [pub_key]).contract_address
 
         state_commitment_chain_addr = Data.from_hex("0x72281826e90dd8a65ab686ff254eb45be426dd22").to_ints()
-        context.state_batch_commitment_recipient_addr = deploy_contract("src/connections/optimism/StateBatchCommitmentRecipient.cairo",  [context.ethereum_headers_store_addr, *state_commitment_chain_addr.values]).contract_address
+        context.state_batch_commitment_recipient_addr = deploy_contract("src/connections/optimism/StateBatchCommitmentRecipient.cairo",  [context.ethereum_headers_store_addr, 0, *state_commitment_chain_addr.values]).contract_address
     %}
     return ();
 }

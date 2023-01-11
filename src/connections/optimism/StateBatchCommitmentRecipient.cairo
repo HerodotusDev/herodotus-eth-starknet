@@ -35,6 +35,11 @@ func _ethereum_headers_store_addr() -> (res: felt) {
 func _state_commitment_chain_addr() -> (res: Address) {
 }
 
+// L1 address allowed to send messages to this contract
+@storage_var
+func _l1_messages_sender() -> (res: felt) {
+}
+
 @storage_var
 func _batch_roots(batch_index: felt) -> (root: Keccak256Hash) {
 }
@@ -46,9 +51,11 @@ func _batch_start(batch_index: felt) -> (start_at_element: felt) {
 @constructor
 func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     ethereum_headers_store_addr: felt,
+    l1_messages_sender: felt,
     state_commitment_chain_addr: Address
 ) {
     _ethereum_headers_store_addr.write(ethereum_headers_store_addr);
+    _l1_messages_sender.write(l1_messages_sender);
     _state_commitment_chain_addr.write(state_commitment_chain_addr);
     return ();
 }
@@ -170,9 +177,29 @@ func verify_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_p
     return ();
 }
 
-@external
+@l1_handler
 func receive_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    from_address: felt,
+    batch_index: felt,
+    batch_start: felt,
+    batch_root_word_1: felt,
+    batch_root_word_2: felt,
+    batch_root_word_3: felt,
+    batch_root_word_4: felt
 ) {
+    alloc_locals;
+    let (l1_sender) = _l1_messages_sender.read();
+    assert from_address = l1_sender;
+
+    local batch_root: Keccak256Hash = Keccak256Hash(
+        batch_root_word_1,
+        batch_root_word_2,
+        batch_root_word_3,
+        batch_root_word_4
+    );
+
+    _batch_roots.write(batch_index, batch_root);
+    _batch_start.write(batch_index, batch_start);
     return ();
 }
 
