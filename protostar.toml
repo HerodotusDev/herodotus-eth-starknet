@@ -11,6 +11,7 @@ L1HeadersStore = ["src/L1HeadersStore.cairo"]
 L1MessagesProxy = ["src/L1MessagesProxy.cairo"]
 L2StateRootsProcessor = ["src/L2StateRootsProcessor.cairo"]
 TWAP = ["src/TWAP.cairo"]
+ERC2O = ["lib/cairo_contracts/src/openzeppelin/token/erc20/presets/ERC20.cairo"]
 
 [test]
 disable-hint-validation = true

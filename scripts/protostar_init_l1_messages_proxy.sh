@@ -2,7 +2,7 @@
 
 # Note: PROTOSTAR_ACCOUNT_PRIVATE_KEY env variable has to be set.
 
-usage="Usage: ./protostar_init_l1_messages_proxy.sh --contract-address ADDR --l1_messages_sender ADDR --l1_headers_store_addr ADDR --owner ADDR --relay_asset_addr ADDR --required_in_asset_to_relay XXX"
+usage="Usage: ./protostar_init_l1_messages_proxy.sh --contract_address ADDR --l1_messages_sender ADDR --l1_headers_store_addr ADDR --owner ADDR --relay_asset_addr ADDR --required_in_asset_to_relay XXX"
 
 if [ $# -ne $(expr 6 \* 2) ]; then
     printf "Error: invalid number of options provided. Expected 6 options.\n%s\n" "$usage" >&2
