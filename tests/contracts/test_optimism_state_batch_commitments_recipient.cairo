@@ -30,7 +30,7 @@ namespace EthereumHeadersStore {
 
 @contract_interface
 namespace IStateBatchCommitmentsRecipient {
-    func verify_batch_root(
+    func verify_batch_root_pre_bedrock(
         l1_inclusion_header_leaf_index: felt,
         l1_inclusion_header_leaf_value: felt,
         l1_inclusion_header_proof_len: felt,
@@ -242,7 +242,7 @@ func test_verify_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, rang
     %}
 
     let (local block_proof: felt*) = alloc();
-    IStateBatchCommitmentsRecipient.verify_batch_root(
+    IStateBatchCommitmentsRecipient.verify_batch_root_pre_bedrock(
         contract_address=state_batch_commitment_recipient_addr,
         l1_inclusion_header_leaf_index=1,
         l1_inclusion_header_leaf_value=pedersen_hash,

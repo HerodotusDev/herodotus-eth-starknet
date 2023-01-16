@@ -61,7 +61,7 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }
 
 @external
-func verify_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(
+func verify_batch_root_pre_bedrock{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(
     mmr_inclusion_header_leaf_index: felt,
     mmr_inclusion_header_leaf_value: felt,
     mmr_inclusion_header_proof_len: felt,
