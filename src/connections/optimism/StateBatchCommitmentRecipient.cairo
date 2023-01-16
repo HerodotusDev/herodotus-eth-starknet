@@ -162,6 +162,8 @@ func verify_l2_output_root_bedrock{syscall_ptr: felt*, pedersen_ptr: HashBuiltin
     assert event_selector.element[2] = 0x225c2e7a8f74cfe5;
     assert event_selector.element[3] = 0x28e46e17d24868e2;
 
+    let (local output_root: Keccak256Hash) = decode_l2_output_root_from_log_topic(event_topics);
+
     // TODO decode outputRoot, l2OutputIndex, l2BlockNumber from topics
 
     return ();
@@ -329,12 +331,25 @@ func decode_event_selector_from_log_topic{
     return (res, );
 }
 
-// func decode_l2_output_root_from_log_topic{
-//     pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
-// }(topic: IntsSequence) -> (root: Keccak256Hash) {
-//     alloc_locals;
+// TODO this is very suboptimal
+func decode_l2_output_root_from_log_topic{
+    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(topic: IntsSequence) -> (root: Keccak256Hash) {
+    alloc_locals;
 
-// }
+    let (local data_section_words) = alloc();
+
+    assert data_section_words[0] = topic.element[4];
+    assert data_section_words[1] = topic.element[5];
+    assert data_section_words[2] = topic.element[6];
+    assert data_section_words[3] = topic.element[7];
+    assert data_section_words[4] = topic.element[8];
+
+    local data_section: IntsSequence = IntsSequence(data_section_words, 5, 34);
+
+    local res: Keccak256Hash = Keccak256Hash(0,0,0,0);
+    return (res, );
+}
 
 func decode_batch_index_from_log_topic{
     pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr

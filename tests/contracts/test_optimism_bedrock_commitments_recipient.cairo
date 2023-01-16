@@ -130,9 +130,9 @@ func init_headers_store{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
     %{
         from utils.types import Data
         from utils.block_header import build_block_header
-        from mocks.blocks import mocked_goerli_blocks_optimism_commitments
+        from mocks.blocks import mocked_goerli_blocks_optimism_bedrock_commitments
 
-        block_header = mocked_goerli_blocks_optimism_commitments[0]
+        block_header = mocked_goerli_blocks_optimism_bedrock_commitments[0]
         header_serialized = build_block_header(block_header)
         header_rlp_ints = Data.from_bytes(header_serialized.raw_rlp()).to_ints()
 

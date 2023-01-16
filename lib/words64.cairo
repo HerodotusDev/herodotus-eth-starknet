@@ -23,6 +23,18 @@ func extract_byte{range_check_ptr}(word: felt, word_len_bytes: felt, position: f
     return (removed_zeros,);
 }
 
+func extract_bytes{range_check_ptr}(word: felt, word_len_bytes: felt, position: felt, number_of_bytes: felt) -> (
+    res: felt
+) {
+    alloc_locals;
+    assert_le(position, word_len_bytes - number_of_bytes);
+    local left_shift_bytes = position;
+    let (local left_shifted) = bitshift_left(word, left_shift_bytes * 8);
+    local right_shift_bytes = word_len_bytes - number_of_bytes;
+    let (local right_shifted) = bitshift_right(left_shifted, right_shift_bytes * 8);
+    return (right_shifted, );
+}
+
 func extract_nibble{range_check_ptr}(word: felt, word_len_bytes: felt, position: felt) -> (
     res: felt
 ) {
