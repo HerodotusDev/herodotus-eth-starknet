@@ -1,6 +1,34 @@
 from typing import List
 from web3.types import HexBytes, BlockData
 
+mocked_goerli_blocks_optimism_bedrock_commitments: List[BlockData] = [
+    {
+        "number": 8320489,
+        "hash": HexBytes("0x566f87ab288e13f6e70d17388bfae98ff048a87be07ae4e8d514471d380306be"),
+        "transactions": [],
+        "difficulty": 0,
+        "extraData": HexBytes("0x506f776572656420627920626c6f58726f757465"),
+        "gasLimit": 30000000,
+        "gasUsed": 14577285,
+        "logsBloom": HexBytes(
+            "0x402c8841e1a01220040050109001028112094b1120448c52109500802c02100a0214444044130e22120c11b10dcd02430183014c5002004188924e0704a465440cc04060cc3200a018070818400834ac100b8c4882d610800841504480980d4802081508c2404004652001839a4088570801440308145610700b441b898001e2002950300401048c204780818700c122802d1827202c200d400119d055628624021ec830064000100000304805320c80039409062006868173000028a5242a208321c81ab700e1011001048008d2020480040030200e0010128b488e0c416680803738012004a3820808018000a00812404b30c408000355000a0a0002023109"
+        ),
+        "miner": "0x8dc847af872947ac18d5d63fa646eb65d4d99560",
+        "mixHash": HexBytes("0x4537f22b63cacceb36c9c9ac0f9132dea45ab8251811b9cbee90dbaa12ee5390"),
+        "nonce": HexBytes("0x0000000000000000"),
+        "parentHash": HexBytes("0x0bdbf2dfd3c8961e303bc2480855a109d9cc3237f683f6bd4f91820589abf611"),
+        "receiptsRoot": HexBytes("0xf1b0f3040d02b6cb199ddac02c39aca482daac569d51fdfec5e7cf0c65fa5e70"),
+        "sha3Uncles": HexBytes("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+        "size": 172392,
+        "stateRoot": HexBytes("0x598dbe310ee2bf214985a5a17590692504fda99202f0c9ef4ff5a24d8a502213"),
+        "timestamp": 1673860608,
+        "totalDifficulty": 10790000,
+        "transactionsRoot": HexBytes("0xf509f98c1ff8a8b3656ce04c8c380193e57cde0b55ecda662ce300c1f364f928"),
+        "uncles": [],
+        "baseFeePerGas": 214
+    }
+]
+
 mocked_goerli_blocks_optimism_commitments: List[BlockData] = [
     {
         "number": 7260803,

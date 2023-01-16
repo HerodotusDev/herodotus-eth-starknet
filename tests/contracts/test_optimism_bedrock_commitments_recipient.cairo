@@ -30,7 +30,7 @@ namespace EthereumHeadersStore {
 
 @contract_interface
 namespace IStateBatchCommitmentsRecipient {
-    func verify_batch_root_pre_bedrock(
+    func verify_l2_output_root_bedrock(
         l1_inclusion_header_leaf_index: felt,
         l1_inclusion_header_leaf_value: felt,
         l1_inclusion_header_proof_len: felt,
@@ -68,8 +68,16 @@ func __setup__{syscall_ptr: felt*, range_check_ptr}() {
         context.relayer_pub_key = pub_key
         context.ethereum_headers_store_addr = deploy_contract("src/connections/ethereum/HeadersStore.cairo", [pub_key]).contract_address
 
-        state_commitment_chain_addr = Data.from_hex("0x72281826e90dd8a65ab686ff254eb45be426dd22").to_ints()
-        context.state_batch_commitment_recipient_addr = deploy_contract("src/connections/optimism/StateBatchCommitmentRecipient.cairo",  [context.ethereum_headers_store_addr, 0, *state_commitment_chain_addr.values]).contract_address
+        state_commitment_chain_addr = Data.from_hex("0xe6dfba0953616bacab0c9a8ecb3a9bba77fc15c0").to_ints()
+        l2output_oracle_addr = Data.from_hex("0xe6dfba0953616bacab0c9a8ecb3a9bba77fc15c0").to_ints()
+        context.state_batch_commitment_recipient_addr = deploy_contract(
+            "src/connections/optimism/StateBatchCommitmentRecipient.cairo",
+            [
+                context.ethereum_headers_store_addr,
+                0,
+                *state_commitment_chain_addr.values,
+                *l2output_oracle_addr.values
+            ]).contract_address
     %}
     return ();
 }
@@ -85,22 +93,22 @@ func init_headers_store{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
 
     %{
         from utils.helpers import chunk_bytes_input, bytes_to_int_big, IntsSequence
-        from mocks.blocks import mocked_goerli_blocks_optimism_commitments
+        from mocks.blocks import mocked_goerli_blocks_optimism_bedrock_commitments
         from utils.types import Data, Encoding, BlockHeaderIndexes
         from utils.block_header import build_block_header
 
         ids.ethereum_headers_store_addr = context.ethereum_headers_store_addr
 
-        block_header = mocked_goerli_blocks_optimism_commitments[0]
+        block_header = mocked_goerli_blocks_optimism_bedrock_commitments[0]
         header_serialized = build_block_header(block_header)
         header_rlp_ints = Data.from_bytes(header_serialized.raw_rlp()).to_ints()
 
-        trusted_parent_hash = Data.from_hex("0xcf2ccfaf39f30c1a134bdec3f76f057a721577dd6628825cdff2e6a4e555e38b")
+        trusted_parent_hash = Data.from_hex("0x566f87ab288e13f6e70d17388bfae98ff048a87be07ae4e8d514471d380306be")
         assert trusted_parent_hash.to_hex() == header_serialized.hash().hex()
 
         parent_hash = trusted_parent_hash.to_ints(Encoding.BIG).values
         segments.write_arg(ids.parent_hash, parent_hash)
-        ids.block_number = mocked_goerli_blocks_optimism_commitments[0]['number'] + 1
+        ids.block_number = mocked_goerli_blocks_optimism_bedrock_commitments[0]['number'] + 1
 
         stop_prank_callable = start_prank(context.relayer_pub_key, target_contract_address=context.ethereum_headers_store_addr)
     %}
@@ -160,7 +168,7 @@ func init_headers_store{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
 }
 
 @view
-func test_verify_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+func test_verify_l2_output_root_bedrock{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     alloc_locals;
 
     local ethereum_headers_store_addr;
@@ -214,7 +222,7 @@ func test_verify_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, rang
         from utils.helpers import IntsSequence
         from rlp import encode
 
-        proof_path = proof_path = Data.from_hex("0x" + encode(Data.from_hex(receipts_proofs[1]['receipt']['transactionIndex']).to_bytes()).hex())
+        proof_path = proof_path = Data.from_hex("0x" + encode(Data.from_hex(receipts_proofs[2]['receipt']['transactionIndex']).to_bytes()).hex())
 
         path_values = proof_path.to_ints().values
         segments.write_arg(ids.path, path_values)
@@ -222,7 +230,7 @@ func test_verify_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, rang
         ids.path_size_bytes = proof_path.to_ints().length
 
         # Handle receipt proof
-        receipt_proof = list(map(lambda element: Data.from_hex(element).to_ints(), receipts_proofs[1]['receiptProof']))
+        receipt_proof = list(map(lambda element: Data.from_hex(element).to_ints(), receipts_proofs[2]['receiptProof']))
         flat_receipt_proof = []
         flat_receipt_proof_sizes_bytes = []
         flat_receipt_proof_sizes_words = []
@@ -242,7 +250,7 @@ func test_verify_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, rang
     %}
 
     let (local block_proof: felt*) = alloc();
-    IStateBatchCommitmentsRecipient.verify_batch_root_pre_bedrock(
+    IStateBatchCommitmentsRecipient.verify_l2_output_root_bedrock(
         contract_address=state_batch_commitment_recipient_addr,
         l1_inclusion_header_leaf_index=1,
         l1_inclusion_header_leaf_value=pedersen_hash,

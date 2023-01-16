@@ -325,10 +325,16 @@ func decode_event_selector_from_log_topic{
     assert res_words[1] = topic_no_abi_len.element[1];
     assert res_words[2] = topic_no_abi_len.element[2];
     assert res_words[3] = topic_no_abi_len.element[3];
-
     local res: IntsSequence = IntsSequence(res_words, 4, 32);
     return (res, );
 }
+
+// func decode_l2_output_root_from_log_topic{
+//     pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+// }(topic: IntsSequence) -> (root: Keccak256Hash) {
+//     alloc_locals;
+
+// }
 
 func decode_batch_index_from_log_topic{
     pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
