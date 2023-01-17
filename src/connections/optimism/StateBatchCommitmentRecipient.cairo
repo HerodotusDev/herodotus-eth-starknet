@@ -8,7 +8,7 @@ from starkware.cairo.common.alloc import alloc
 from lib.types import Keccak256Hash, IntsSequence, Address, RLPItem, reconstruct_ints_sequence_list
 from lib.blockheader_rlp_extractor import decode_receipts_root
 from lib.trie_proofs import verify_proof
-from lib.bytes import remove_leading_byte
+from lib.bytes import remove_leading_byte, remove_leading_bytes
 from lib.extract_from_rlp import to_list, extract_data
 from lib.bitshift import bitshift_right, bitshift_left
 
@@ -164,20 +164,7 @@ func verify_l2_output_root_bedrock{syscall_ptr: felt*, pedersen_ptr: HashBuiltin
 
     let (local output_root: Keccak256Hash) = decode_l2_output_root_from_log_topic(event_topics);
 
-    %{
-        from utils.types import Data, IntsSequence
-
-        data_size_words = ids.event_topics.element_size_words
-        data_size_bytes = ids.event_topics.element_size_bytes
-        data_words = memory.get_range(ids.event_topics.element, data_size_words)
-
-        data_hex = Data.from_ints(IntsSequence(data_words, data_size_bytes)).to_hex()
-
-        print("Topic_hex: ", data_hex)
-        print("Topic_hex_words", list(map(lambda x: hex(x), data_words)))
-    %}
-
-    // TODO decode outputRoot, l2OutputIndex, l2BlockNumber from topics
+    // TODO decode l2OutputIndex, l2BlockNumber from topics
 
     return ();
 }
@@ -344,23 +331,18 @@ func decode_event_selector_from_log_topic{
     return (res, );
 }
 
-// TODO this is very suboptimal
 func decode_l2_output_root_from_log_topic{
     pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(topic: IntsSequence) -> (root: Keccak256Hash) {
     alloc_locals;
+    let (local data: IntsSequence) = remove_leading_bytes(topic, 34);
 
-    let (local data_section_words) = alloc();
-
-    assert data_section_words[0] = topic.element[4];
-    assert data_section_words[1] = topic.element[5];
-    assert data_section_words[2] = topic.element[6];
-    assert data_section_words[3] = topic.element[7];
-    assert data_section_words[4] = topic.element[8];
-
-    local data_section: IntsSequence = IntsSequence(data_section_words, 5, 34);
-
-    local res: Keccak256Hash = Keccak256Hash(0,0,0,0);
+    local res: Keccak256Hash = Keccak256Hash(
+        data.element[0],
+        data.element[1],
+        data.element[2],
+        data.element[3]
+    );
     return (res, );
 }
 
