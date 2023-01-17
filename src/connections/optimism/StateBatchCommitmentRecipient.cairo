@@ -164,6 +164,19 @@ func verify_l2_output_root_bedrock{syscall_ptr: felt*, pedersen_ptr: HashBuiltin
 
     let (local output_root: Keccak256Hash) = decode_l2_output_root_from_log_topic(event_topics);
 
+    %{
+        from utils.types import Data, IntsSequence
+
+        data_size_words = ids.event_topics.element_size_words
+        data_size_bytes = ids.event_topics.element_size_bytes
+        data_words = memory.get_range(ids.event_topics.element, data_size_words)
+
+        data_hex = Data.from_ints(IntsSequence(data_words, data_size_bytes)).to_hex()
+
+        print("Topic_hex: ", data_hex)
+        print("Topic_hex_words", list(map(lambda x: hex(x), data_words)))
+    %}
+
     // TODO decode outputRoot, l2OutputIndex, l2BlockNumber from topics
 
     return ();
