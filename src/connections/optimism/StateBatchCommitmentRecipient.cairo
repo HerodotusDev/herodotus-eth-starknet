@@ -162,10 +162,12 @@ func verify_l2_output_root_bedrock{syscall_ptr: felt*, pedersen_ptr: HashBuiltin
     assert event_selector.element[2] = 0x225c2e7a8f74cfe5;
     assert event_selector.element[3] = 0x28e46e17d24868e2;
 
+    let (local output_index: felt) = decode_l2_output_index_from_log_topic(event_topics);
     let (local output_root: Keccak256Hash) = decode_l2_output_root_from_log_topic(event_topics);
+    let (local l2_block_number: felt) = decode_l2_block_number_from_log_topic(event_topics);
 
-    // TODO decode l2OutputIndex, l2BlockNumber from topics
-
+    _bedrock_outputs_block_numbers.write(output_index, l2_block_number);
+    _bedrock_outputs_roots.write(output_index, output_root);
     return ();
 }
 
@@ -344,6 +346,23 @@ func decode_l2_output_root_from_log_topic{
         data.element[3]
     );
     return (res, );
+}
+
+func decode_l2_output_index_from_log_topic{
+    range_check_ptr
+}(topic: IntsSequence) -> (output_index: felt) {
+    alloc_locals;
+
+    local data: felt = topic.element[12];
+    let (res) = bitshift_right(data, 5 * 8);
+    return (res, );
+}
+
+func decode_l2_block_number_from_log_topic{
+    range_check_ptr
+}(topic: IntsSequence) -> (output_index: felt) {
+    alloc_locals;
+    return (topic.element[16], );
 }
 
 func decode_batch_index_from_log_topic{
