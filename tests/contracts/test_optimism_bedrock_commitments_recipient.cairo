@@ -8,7 +8,7 @@ from starkware.cairo.common.hash_state import hash_felts
 from starkware.cairo.common.hash import hash2
 from starkware.starknet.common.syscalls import get_tx_info
 
-from lib.types import BedrockOutputRootPreimage, Bytes32, Keccak256Hash
+from lib.types import BedrockOutputRootPreimage, Bytes32, Keccak256Hash, Address
 
 
 @contract_interface
@@ -56,11 +56,23 @@ namespace IStateBatchCommitmentsRecipient {
         output_root_preimage: BedrockOutputRootPreimage,
     ) {
     }
+
+    func initialize(
+        ethereum_headers_store_addr: felt,
+        optimism_headers_store_addr: felt,
+        l2output_oracle_addr: Address
+    ) {
+    }
 }
 
 @external
 func __setup__{syscall_ptr: felt*, range_check_ptr}() {
     alloc_locals;
+    local state_batch_commitment_recipient_addr;
+    local optimism_headers_store_addr;
+    local ethereum_headers_store_addr;
+
+    local l2output_oracle_addr: Address;
     %{
         from starkware.crypto.signature.signature import (
             private_to_stark_key,
@@ -71,17 +83,24 @@ func __setup__{syscall_ptr: felt*, range_check_ptr}() {
         context.relayer_pub_key = pub_key
         context.ethereum_headers_store_addr = deploy_contract("src/connections/ethereum/HeadersStore.cairo", [pub_key]).contract_address
 
-        state_commitment_chain_addr = Data.from_hex("0xe6dfba0953616bacab0c9a8ecb3a9bba77fc15c0").to_ints()
         l2output_oracle_addr = Data.from_hex("0xe6dfba0953616bacab0c9a8ecb3a9bba77fc15c0").to_ints()
-        context.state_batch_commitment_recipient_addr = deploy_contract(
-            "src/connections/optimism/StateBatchCommitmentRecipient.cairo",
-            [
-                context.ethereum_headers_store_addr,
-                0,
-                *state_commitment_chain_addr.values,
-                *l2output_oracle_addr.values
-            ]).contract_address
+        context.state_batch_commitment_recipient_addr = deploy_contract("src/connections/optimism/StateBatchCommitmentRecipient.cairo", []).contract_address
+        context.optimism_headers_store_addr = deploy_contract("src/connections/ethereum/HeadersStore.cairo", [context.state_batch_commitment_recipient_addr]).contract_address
+
+        ids.state_batch_commitment_recipient_addr = context.state_batch_commitment_recipient_addr
+        ids.optimism_headers_store_addr = context.optimism_headers_store_addr
+        ids.ethereum_headers_store_addr = context.ethereum_headers_store_addr
+
+        ids.l2output_oracle_addr.word_1 = l2output_oracle_addr.values[0]
+        ids.l2output_oracle_addr.word_2 = l2output_oracle_addr.values[1]
+        ids.l2output_oracle_addr.word_3 = l2output_oracle_addr.values[2]
     %}
+    IStateBatchCommitmentsRecipient.initialize(
+        contract_address=state_batch_commitment_recipient_addr,
+        ethereum_headers_store_addr=ethereum_headers_store_addr,
+        optimism_headers_store_addr=optimism_headers_store_addr,
+        l2output_oracle_addr=l2output_oracle_addr,
+    );
     return ();
 }
 

@@ -39,47 +39,28 @@ func _ethereum_headers_store_addr() -> (res: felt) {
 }
 
 @storage_var
-func _state_commitment_chain_addr() -> (res: Address) {
+func _optimism_headers_store_addr() -> (res: felt) {
 }
 
 @storage_var
 func _l2output_oracle_addr() -> (res: Address) {
 }
 
-
-// L1 address allowed to send messages to this contract
 @storage_var
-func _l1_messages_sender() -> (res: felt) {
+func _initialized() -> (res: felt) {
 }
 
-
-@storage_var
-func _batch_roots(batch_index: felt) -> (root: Keccak256Hash) {
-}
-
-@storage_var
-func _batch_start(batch_index: felt) -> (start_at_element: felt) {
-}
-
-@storage_var
-func _bedrock_outputs_block_numbers(l2_output_index: felt) -> (res: felt) {
-}
-
-@storage_var
-func _bedrock_outputs_roots(l2_output_index: felt) -> (root: Keccak256Hash) {
-}
-
-
-@constructor
-func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+@external
+func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     ethereum_headers_store_addr: felt,
-    l1_messages_sender: felt,
-    state_commitment_chain_addr: Address,
+    optimism_headers_store_addr: felt,
     l2output_oracle_addr: Address
 ) {
+    let (initialized) = _initialized.read();
+    assert initialized = 0;
+
     _ethereum_headers_store_addr.write(ethereum_headers_store_addr);
-    _l1_messages_sender.write(l1_messages_sender);
-    _state_commitment_chain_addr.write(state_commitment_chain_addr);
+    _optimism_headers_store_addr.write(optimism_headers_store_addr);
     _l2output_oracle_addr.write(l2output_oracle_addr);
     return ();
 }
@@ -181,15 +162,20 @@ func verify_l2_output_root_bedrock{syscall_ptr: felt*, pedersen_ptr: HashBuiltin
     assert output_root_preimage_hash.word_3 = output_root.word_3;
     assert output_root_preimage_hash.word_4 = output_root.word_4;
 
-    _bedrock_outputs_block_numbers.write(output_index, l2_block_number);
-    _bedrock_outputs_roots.write(output_index, output_root);
+    let (optimism_headers_store) = _optimism_headers_store_addr.read();
 
-    %{
-        print("L2 block number: ", ids.l2_block_number)
-        print("Expected L2 output root: ", [hex(ids.output_root.word_1), hex(ids.output_root.word_2), hex(ids.output_root.word_3), hex(ids.output_root.word_4)])
-        print("Actual L2 output root: ", [hex(ids.output_root_preimage_hash.word_1), hex(ids.output_root_preimage_hash.word_2), hex(ids.output_root_preimage_hash.word_3), hex(ids.output_root_preimage_hash.word_4)])
-    %}
+    let (local block_hash_words) = alloc();
+    assert block_hash_words[0] = output_root_preimage.l2_block_hash.word_1;
+    assert block_hash_words[1] = output_root_preimage.l2_block_hash.word_2;
+    assert block_hash_words[2] = output_root_preimage.l2_block_hash.word_3;
+    assert block_hash_words[3] = output_root_preimage.l2_block_hash.word_4;
 
+    IEthereumHeadersStore.receive_from_l1(
+        optimism_headers_store,
+        4,
+        block_hash_words,
+        l2_block_number,
+    );
     return ();
 }
 
