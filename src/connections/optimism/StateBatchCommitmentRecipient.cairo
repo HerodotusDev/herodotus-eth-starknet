@@ -174,7 +174,7 @@ func verify_l2_output_root_bedrock{syscall_ptr: felt*, pedersen_ptr: HashBuiltin
         optimism_headers_store,
         4,
         block_hash_words,
-        l2_block_number,
+        l2_block_number + 1,
     );
     return ();
 }
@@ -209,15 +209,6 @@ func calculate_output_root_preimage_hash{
     let (local keccak_ptr) = alloc();
 
     local preimage_hash_input: IntsSequence = IntsSequence(preimage_hash_input_words, 16, 128);
-
-    %{
-        from utils.types import Data
-        expected = "0x00000000000000000000000000000000000000000000000000000000000000000ba2190732990103e5750c0ff0490a47c519186ee437927a8bf9f45f595ef129f3e48738f5ebd8d819d77bfda1c5d59a1816cda540ee217ffc842fdf9198dbc35802a3b8720151a3b3a32bd318b04c2f47e65a0bf922b8a3638fd59f13f8a42a"
-        print(list(map(lambda x: hex(x), Data.from_hex(expected).to_ints().values)))
-        input_words = list(map(lambda x: hex(x), memory.get_range(ids.preimage_hash_input_words, 16)))
-        print(input_words)
-    %}
-
     let (local preimage_hash: felt*) = keccak256{keccak_ptr=keccak_ptr}(preimage_hash_input);
     local res: Keccak256Hash = Keccak256Hash(preimage_hash[0], preimage_hash[1], preimage_hash[2], preimage_hash[3]);
     return (res, );

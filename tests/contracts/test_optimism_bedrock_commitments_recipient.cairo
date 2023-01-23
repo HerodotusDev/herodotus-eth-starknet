@@ -308,5 +308,7 @@ func test_verify_l2_output_root_bedrock{syscall_ptr: felt*, pedersen_ptr: HashBu
         receipt_inclusion_proof_concat=receipt_proof_concat,
         output_root_preimage=preimage,
     );
+
+    
     return ();
 }
