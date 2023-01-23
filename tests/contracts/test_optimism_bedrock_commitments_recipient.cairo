@@ -8,6 +8,8 @@ from starkware.cairo.common.hash_state import hash_felts
 from starkware.cairo.common.hash import hash2
 from starkware.starknet.common.syscalls import get_tx_info
 
+from lib.types import BedrockOutputRootPreimage, Bytes32, Keccak256Hash
+
 
 @contract_interface
 namespace EthereumHeadersStore {
@@ -51,6 +53,7 @@ namespace IStateBatchCommitmentsRecipient {
         receipt_inclusion_proof_sizes_words: felt*,
         receipt_inclusion_proof_concat_len: felt,
         receipt_inclusion_proof_concat: felt*,
+        output_root_preimage: BedrockOutputRootPreimage,
     ) {
     }
 }
@@ -249,6 +252,18 @@ func test_verify_l2_output_root_bedrock{syscall_ptr: felt*, pedersen_ptr: HashBu
         segments.write_arg(ids.receipt_proof_concat, flat_receipt_proof)
     %}
 
+    local preimage_version: Bytes32 = Bytes32(0x0, 0x0, 0x0, 0x0);
+    local preimage_l2_block_state_root: Keccak256Hash = Keccak256Hash(0x0ba2190732990103, 0xe5750c0ff0490a47, 0xc519186ee437927a, 0x8bf9f45f595ef129);
+    local preimage_l2_withdrawals_storage_root: Keccak256Hash = Keccak256Hash(0xf3e48738f5ebd8d8, 0x19d77bfda1c5d59a, 0x1816cda540ee217f, 0xfc842fdf9198dbc3);
+    local preimage_l2_block_hash: Keccak256Hash = Keccak256Hash(0x5802a3b8720151a3, 0xb3a32bd318b04c2f, 0x47e65a0bf922b8a3, 0x638fd59f13f8a42a);
+
+    local preimage: BedrockOutputRootPreimage = BedrockOutputRootPreimage(
+        version=preimage_version,
+        l2_block_state_root=preimage_l2_block_state_root,
+        l2_withdrawals_storage_root=preimage_l2_withdrawals_storage_root,
+        l2_block_hash=preimage_l2_block_hash
+    );
+
     let (local block_proof: felt*) = alloc();
     IStateBatchCommitmentsRecipient.verify_l2_output_root_bedrock(
         contract_address=state_batch_commitment_recipient_addr,
@@ -272,6 +287,7 @@ func test_verify_l2_output_root_bedrock{syscall_ptr: felt*, pedersen_ptr: HashBu
         receipt_inclusion_proof_sizes_words=receipt_proof_sizes_words,
         receipt_inclusion_proof_concat_len=receipt_proof_concat_len,
         receipt_inclusion_proof_concat=receipt_proof_concat,
+        output_root_preimage=preimage,
     );
     return ();
 }

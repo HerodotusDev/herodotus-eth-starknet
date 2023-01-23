@@ -5,12 +5,16 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
 
-from lib.types import Keccak256Hash, IntsSequence, Address, RLPItem, reconstruct_ints_sequence_list
+from lib.types import Keccak256Hash, IntsSequence, Address, RLPItem, reconstruct_ints_sequence_list, BedrockOutputRootPreimage
 from lib.blockheader_rlp_extractor import decode_receipts_root
 from lib.trie_proofs import verify_proof
 from lib.bytes import remove_leading_byte, remove_leading_bytes
 from lib.extract_from_rlp import to_list, extract_data
 from lib.bitshift import bitshift_right, bitshift_left
+from lib.comp_arr import arr_eq
+from lib.unsafe_keccak import keccak256
+
+from starkware.cairo.common.cairo_keccak.keccak import finalize_keccak
 
 @contract_interface
 namespace IEthereumHeadersStore {
@@ -24,6 +28,9 @@ namespace IEthereumHeadersStore {
         inclusion_tx_hash: felt,
         mmr_pos: felt,
     ) {
+    }
+
+    func receive_from_l1(parent_hash_len: felt, parent_hash: felt*, block_number: felt) {
     }
 }
 
@@ -99,6 +106,7 @@ func verify_l2_output_root_bedrock{syscall_ptr: felt*, pedersen_ptr: HashBuiltin
     receipt_inclusion_proof_sizes_words: felt*,
     receipt_inclusion_proof_concat_len: felt,
     receipt_inclusion_proof_concat: felt*,
+    output_root_preimage: BedrockOutputRootPreimage,
 ) {
     alloc_locals;
     let (local block_header: IntsSequence) = access_l1_header_from_mmr(
@@ -166,155 +174,67 @@ func verify_l2_output_root_bedrock{syscall_ptr: felt*, pedersen_ptr: HashBuiltin
     let (local output_root: Keccak256Hash) = decode_l2_output_root_from_log_topic(event_topics);
     let (local l2_block_number: felt) = decode_l2_block_number_from_log_topic(event_topics);
 
+    let (local output_root_preimage_hash: Keccak256Hash) = calculate_output_root_preimage_hash(output_root_preimage);
+
+    assert output_root_preimage_hash.word_1 = output_root.word_1;
+    assert output_root_preimage_hash.word_2 = output_root.word_2;
+    assert output_root_preimage_hash.word_3 = output_root.word_3;
+    assert output_root_preimage_hash.word_4 = output_root.word_4;
+
     _bedrock_outputs_block_numbers.write(output_index, l2_block_number);
     _bedrock_outputs_roots.write(output_index, output_root);
+
+    %{
+        print("L2 block number: ", ids.l2_block_number)
+        print("Expected L2 output root: ", [hex(ids.output_root.word_1), hex(ids.output_root.word_2), hex(ids.output_root.word_3), hex(ids.output_root.word_4)])
+        print("Actual L2 output root: ", [hex(ids.output_root_preimage_hash.word_1), hex(ids.output_root_preimage_hash.word_2), hex(ids.output_root_preimage_hash.word_3), hex(ids.output_root_preimage_hash.word_4)])
+    %}
+
     return ();
 }
 
-@external
-func verify_batch_root_pre_bedrock{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(
-    mmr_inclusion_header_leaf_index: felt,
-    mmr_inclusion_header_leaf_value: felt,
-    mmr_inclusion_header_proof_len: felt,
-    mmr_inclusion_header_proof: felt*,
-    mmr_inclusion_header_peaks_len: felt,
-    mmr_inclusion_header_peaks: felt*,
-    mmr_inclusion_header_inclusion_tx_hash: felt,
-    mmr_inclusion_header_pos: felt,
-    l1_header_rlp_len: felt,
-    l1_header_rlp: felt*,
-    l1_header_rlp_bytes_len: felt,
-    path_size_bytes: felt,
-    path_len: felt,
-    path: felt*,
-    receipt_inclusion_proof_sizes_bytes_len: felt,
-    receipt_inclusion_proof_sizes_bytes: felt*,
-    receipt_inclusion_proof_sizes_words_len: felt,
-    receipt_inclusion_proof_sizes_words: felt*,
-    receipt_inclusion_proof_concat_len: felt,
-    receipt_inclusion_proof_concat: felt*,
-) {
+func calculate_output_root_preimage_hash{
+    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(preimage: BedrockOutputRootPreimage) -> (preimage_hash: Keccak256Hash) {
     alloc_locals;
-    let (local block_header: IntsSequence) = access_l1_header_from_mmr(
-        mmr_inclusion_header_leaf_index=mmr_inclusion_header_leaf_index,
-        mmr_inclusion_header_leaf_value=mmr_inclusion_header_leaf_value,
-        mmr_inclusion_header_proof_len=mmr_inclusion_header_proof_len,
-        mmr_inclusion_header_proof=mmr_inclusion_header_proof,
-        mmr_inclusion_header_peaks_len=mmr_inclusion_header_peaks_len,
-        mmr_inclusion_header_peaks=mmr_inclusion_header_peaks,
-        mmr_inclusion_header_inclusion_tx_hash=mmr_inclusion_header_inclusion_tx_hash,
-        mmr_inclusion_header_pos=mmr_inclusion_header_pos,
-        l1_header_rlp_len=l1_header_rlp_len,
-        l1_header_rlp=l1_header_rlp,
-        l1_header_rlp_bytes_len=l1_header_rlp_bytes_len,
-    );
 
-    let (local receipt_tree_leaf: IntsSequence) = verify_receipt_proof_against_header(
-        block_header=block_header,
-        path_size_bytes=path_size_bytes,
-        path_len=path_len,
-        path=path,
-        receipt_inclusion_proof_sizes_bytes_len=receipt_inclusion_proof_sizes_bytes_len,
-        receipt_inclusion_proof_sizes_bytes=receipt_inclusion_proof_sizes_bytes,
-        receipt_inclusion_proof_sizes_words_len=receipt_inclusion_proof_sizes_words_len,
-        receipt_inclusion_proof_sizes_words=receipt_inclusion_proof_sizes_words,
-        receipt_inclusion_proof_concat_len=receipt_inclusion_proof_concat_len,
-        receipt_inclusion_proof_concat=receipt_inclusion_proof_concat,
-    );
+    let (local preimage_hash_input_words) = alloc();
 
-    let (local valid_receipt_rlp: IntsSequence) = remove_leading_byte(receipt_tree_leaf);
-    let (local receipt_rlp_items: RLPItem*, receipt_rlp_items_len: felt) = to_list(valid_receipt_rlp);
+    assert preimage_hash_input_words[0] = preimage.version.word_1;
+    assert preimage_hash_input_words[1] = preimage.version.word_2;
+    assert preimage_hash_input_words[2] = preimage.version.word_3;
+    assert preimage_hash_input_words[3] = preimage.version.word_4;
 
-    assert_tx_succeed(
-        receipt_rlp_items=receipt_rlp_items,
-        receipt_rlp_items_len=receipt_rlp_items_len,
-        receipt_rlp=valid_receipt_rlp
-    );
+    assert preimage_hash_input_words[4] = preimage.l2_block_state_root.word_1;
+    assert preimage_hash_input_words[5] = preimage.l2_block_state_root.word_2;
+    assert preimage_hash_input_words[6] = preimage.l2_block_state_root.word_3;
+    assert preimage_hash_input_words[7] = preimage.l2_block_state_root.word_4;
 
-    let (local logs_rlp: IntsSequence) = extract_data(
-        receipt_rlp_items[3].dataPosition, receipt_rlp_items[3].length, valid_receipt_rlp
-    );
-    let (local logs_rlp_items: RLPItem*, logs_rlp_items_len: felt) = to_list(logs_rlp);
+    assert preimage_hash_input_words[8] = preimage.l2_withdrawals_storage_root.word_1;
+    assert preimage_hash_input_words[9] = preimage.l2_withdrawals_storage_root.word_2;
+    assert preimage_hash_input_words[10] = preimage.l2_withdrawals_storage_root.word_3;
+    assert preimage_hash_input_words[11] = preimage.l2_withdrawals_storage_root.word_4;
 
-    let (local expected_recipient) = _state_commitment_chain_addr.read();
-    assert_proper_recipient(
-        expected_recipient=expected_recipient,
-        logs_rlp_items=logs_rlp_items,
-        logs_rlp_items_len=logs_rlp_items_len,
-        logs_rlp=logs_rlp
-    );
+    assert preimage_hash_input_words[12] = preimage.l2_block_hash.word_1;
+    assert preimage_hash_input_words[13] = preimage.l2_block_hash.word_2;
+    assert preimage_hash_input_words[14] = preimage.l2_block_hash.word_3;
+    assert preimage_hash_input_words[15] = preimage.l2_block_hash.word_4;
 
-    let (local event_topics: IntsSequence) =  extract_data(
-        logs_rlp_items[1].dataPosition, logs_rlp_items[1].length, logs_rlp
-    );
+    let (local keccak_ptr) = alloc();
 
-    let (local event_selector: IntsSequence) = decode_event_selector_from_log_topic(event_topics);
-    assert event_selector.element[0] = 0x16be4c5129a4e03c;
-    assert event_selector.element[1] = 0xf3350262e181dc02;
-    assert event_selector.element[2] = 0xddfb4a6008d92536;
-    assert event_selector.element[3] = 0x8c0899fcd97ca9c5;
+    local preimage_hash_input: IntsSequence = IntsSequence(preimage_hash_input_words, 16, 128);
 
-    let (local batch_index: felt) = decode_batch_index_from_log_topic(event_topics);
+    %{
+        from utils.types import Data
+        expected = "0x00000000000000000000000000000000000000000000000000000000000000000ba2190732990103e5750c0ff0490a47c519186ee437927a8bf9f45f595ef129f3e48738f5ebd8d819d77bfda1c5d59a1816cda540ee217ffc842fdf9198dbc35802a3b8720151a3b3a32bd318b04c2f47e65a0bf922b8a3638fd59f13f8a42a"
+        print(list(map(lambda x: hex(x), Data.from_hex(expected).to_ints().values)))
+        input_words = list(map(lambda x: hex(x), memory.get_range(ids.preimage_hash_input_words, 16)))
+        print(input_words)
+    %}
 
-    let (local log_data: IntsSequence) = extract_data(
-        logs_rlp_items[2].dataPosition, logs_rlp_items[2].length, logs_rlp
-    );
-
-    let (local batch_root: Keccak256Hash) = decode_batch_root_from_log_data(log_data);
-    let (local batch_should_start_at_element: felt) = decode_batch_start_element_index_from_log_data(log_data);
-
-    _batch_roots.write(batch_index, batch_root);
-    _batch_start.write(batch_index, batch_should_start_at_element);
-
-    return ();
-}
-
-@l1_handler
-func receive_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    from_address: felt,
-    batch_index: felt,
-    batch_start: felt,
-    batch_root_word_1: felt,
-    batch_root_word_2: felt,
-    batch_root_word_3: felt,
-    batch_root_word_4: felt
-) {
-    alloc_locals;
-    let (l1_sender) = _l1_messages_sender.read();
-    assert from_address = l1_sender;
-
-    local batch_root: Keccak256Hash = Keccak256Hash(
-        batch_root_word_1,
-        batch_root_word_2,
-        batch_root_word_3,
-        batch_root_word_4
-    );
-
-    _batch_roots.write(batch_index, batch_root);
-    _batch_start.write(batch_index, batch_start);
-    return ();
-}
-
-@external
-func relay_batch_root_optimistic{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-) {
-    return ();
-}
-
-@view
-func get_batch_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    batch_index: felt
-) -> (batch_root: Keccak256Hash) {
-    let (batch_root: Keccak256Hash) = _batch_roots.read(batch_index);
-    return (batch_root,);
-}
-
-@view
-func get_batch_start_index{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    batch_index: felt
-) -> (batch_start: felt) {
-    let (batch_start: felt) = _batch_start.read(batch_index);
-    return (batch_start,);
+    let (local preimage_hash: felt*) = keccak256{keccak_ptr=keccak_ptr}(preimage_hash_input);
+    local res: Keccak256Hash = Keccak256Hash(preimage_hash[0], preimage_hash[1], preimage_hash[2], preimage_hash[3]);
+    return (res, );
 }
 
 func decode_event_selector_from_log_topic{
@@ -363,28 +283,6 @@ func decode_l2_block_number_from_log_topic{
 }(topic: IntsSequence) -> (output_index: felt) {
     alloc_locals;
     return (topic.element[16], );
-}
-
-func decode_batch_index_from_log_topic{
-    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
-}(topic: IntsSequence) -> (batch_index: felt) {
-    return (topic.element[7], );
-}
-
-func decode_batch_root_from_log_data{
-    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
-}(log_data: IntsSequence) -> (batch_root: Keccak256Hash) {
-    alloc_locals;
-    local res: Keccak256Hash = Keccak256Hash(log_data.element[0], log_data.element[1], log_data.element[2], log_data.element[3]);
-    return (res, );
-}
-
-func decode_batch_start_element_index_from_log_data{
-    pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
-}(log_data: IntsSequence) -> (start_element_index: felt) {
-    alloc_locals;
-    local res: felt = log_data.element[11];
-    return (res, );
 }
 
 func access_l1_header_from_mmr{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(
