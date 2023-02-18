@@ -7,7 +7,6 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.hash_state import hash_felts
 from starkware.cairo.common.hash import hash2
-from starkware.starknet.common.syscalls import get_tx_info
 
 from lib.types import Keccak256Hash, Address, StorageSlot
 
@@ -39,7 +38,6 @@ namespace L2StateRootsProcessor {
         l1_inclusion_header_proof: felt*,
         l1_inclusion_header_peaks_len: felt,
         l1_inclusion_header_peaks: felt*,
-        l1_inclusion_header_inclusion_tx_hash: felt,
         l1_inclusion_header_mmr_pos: felt,
         l1_inclusion_header_rlp_len: felt,
         l1_inclusion_header_rlp: felt*,
@@ -168,8 +166,6 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         ids.state_roots_processor = context.state_roots_processor
         ids.l1_headers_store = context.l1_headers_store_addr
     %}
-    let (info) = get_tx_info();
-
     let (local pedersen_hash: felt) = init_headers_store();
     let (node1) = hash2{hash_ptr=pedersen_ptr}(1, pedersen_hash);
     let (local mmr_peaks: felt*) = alloc();
@@ -277,7 +273,6 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         l1_inclusion_header_proof=block_proof,
         l1_inclusion_header_peaks_len=1,
         l1_inclusion_header_peaks=mmr_peaks,
-        l1_inclusion_header_inclusion_tx_hash=info.transaction_hash,
         l1_inclusion_header_mmr_pos=mmr_pos,
         l1_inclusion_header_rlp_len=block_header_rlp_len,
         l1_inclusion_header_rlp=block_header_rlp,

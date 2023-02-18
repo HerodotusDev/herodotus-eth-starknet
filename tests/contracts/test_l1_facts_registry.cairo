@@ -6,7 +6,6 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.hash_state import hash_felts
 from starkware.cairo.common.hash import hash2
-from starkware.starknet.common.syscalls import get_tx_info
 
 from lib.types import Keccak256Hash, Address, StorageSlot
 
@@ -50,7 +49,6 @@ namespace FactsRegistry {
         block_header_rlp_len: felt,
         block_header_rlp: felt*,
         block_header_rlp_bytes_len: felt,
-        inclusion_tx_hash: felt,
         mmr_pos: felt,
     ) {
     }
@@ -248,7 +246,6 @@ func test_prove_account{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
         segments.write_arg(ids.proofs_concat, flat_proof)
     %}
     local account: Address = Address(account_word_1, account_word_2, account_word_3);
-    let (info) = get_tx_info();
     let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
     FactsRegistry.prove_account(
         contract_address=facts_registry,
@@ -270,7 +267,6 @@ func test_prove_account{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
         block_header_rlp_len=block_header_rlp_len,
         block_header_rlp=block_header_rlp,
         block_header_rlp_bytes_len=block_header_rlp_bytes_len,
-        inclusion_tx_hash=info.transaction_hash,
         mmr_pos=mmr_pos,
     );
 
@@ -366,7 +362,6 @@ func test_get_storage{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
         segments.write_arg(ids.proofs_concat, flat_proof)
     %}
     local account: Address = Address(account_word_1, account_word_2, account_word_3);
-    let (info) = get_tx_info();
     let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
     FactsRegistry.prove_account(
         contract_address=facts_registry,
@@ -388,7 +383,6 @@ func test_get_storage{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
         block_header_rlp_len=block_header_rlp_len,
         block_header_rlp=block_header_rlp,
         block_header_rlp_bytes_len=block_header_rlp_bytes_len,
-        inclusion_tx_hash=info.transaction_hash,
         mmr_pos=mmr_pos,
     );
     local slot_word1;
@@ -511,7 +505,6 @@ func test_get_storage_uint{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range
         segments.write_arg(ids.proofs_concat, flat_proof)
     %}
     local account: Address = Address(account_word_1, account_word_2, account_word_3);
-    let (info) = get_tx_info();
     let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
     FactsRegistry.prove_account(
         contract_address=facts_registry,
@@ -533,7 +526,6 @@ func test_get_storage_uint{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range
         block_header_rlp_len=block_header_rlp_len,
         block_header_rlp=block_header_rlp,
         block_header_rlp_bytes_len=block_header_rlp_bytes_len,
-        inclusion_tx_hash=info.transaction_hash,
         mmr_pos=mmr_pos,
     );
     local slot_word1;

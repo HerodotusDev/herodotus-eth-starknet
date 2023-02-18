@@ -3,7 +3,7 @@
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
-from starkware.starknet.common.syscalls import get_caller_address, get_tx_info
+from starkware.starknet.common.syscalls import get_caller_address
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.math_cmp import is_le
 
@@ -19,7 +19,7 @@ from cairo_mmr.src.historical_mmr import (
     append as mmr_append,
     verify_past_proof as mmr_verify_past_proof,
     get_last_pos as mmr_get_last_pos,
-    get_inclusion_tx_hash_to_root as mmr_get_inclusion_tx_hash_to_root,
+    get_tree_size_to_root as mmr_get_tree_size_to_root,
 )
 
 @event
@@ -134,7 +134,6 @@ func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check
 // @param block_header_rlp The array containing the block header RLP bytes.
 // @param mmr_peaks_len The length of the MMR peaks array.
 // @param mmr_peaks The array containing the MMR peaks.
-// @param inclusion_tx_hash The inclusion transaction hash of the reference block.
 // @param mmr_pos The MMR position at the proof generation time.
 //
 @external
@@ -156,7 +155,6 @@ func process_block{
     block_header_rlp: felt*,
     mmr_peaks_len: felt,
     mmr_peaks: felt*,
-    inclusion_tx_hash: felt,
     mmr_pos: felt,
 ) {
     alloc_locals;
@@ -174,7 +172,6 @@ func process_block{
         block_header_rlp_bytes_len,
         block_header_rlp_len,
         block_header_rlp,
-        inclusion_tx_hash,
         mmr_pos,
     );
 
@@ -250,7 +247,6 @@ func process_till_block{
     mmr_peaks_lens: felt*,
     mmr_peaks_concat_len: felt,
     mmr_peaks_concat: felt*,
-    inclusion_tx_hash: felt,
     mmr_pos: felt,
 ) {
     alloc_locals;
@@ -270,7 +266,6 @@ func process_till_block{
         block_headers_lens_bytes[0],
         block_headers_lens_words[0],
         block_headers_concat,
-        inclusion_tx_hash,
         mmr_pos,
     );
 
@@ -330,7 +325,6 @@ func get_mmr_last_pos{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
 // @param proof The array containing the proof.
 // @param peaks_len The length of the peaks array in the proof.
 // @param peaks The array containing the peaks in the proof.
-// @param inclusion_tx_hash The inclusion transaction hash of the block.
 // @param mmr_pos The MMR position of the block.
 //
 @external
@@ -341,26 +335,25 @@ func call_mmr_verify_past_proof{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, 
     proof: felt*,
     peaks_len: felt,
     peaks: felt*,
-    inclusion_tx_hash: felt,
     mmr_pos: felt,
 ) {
     mmr_verify_past_proof(
-        index, value, proof_len, proof, peaks_len, peaks, inclusion_tx_hash, mmr_pos
+        index, value, proof_len, proof, peaks_len, peaks, mmr_pos
     );
     return ();
 }
 
 //
-// @dev This function gets the root of a given inclusion transaction hash of a block in the MMR tree.
-// @notice This function calls the mmr_get_inclusion_tx_hash_to_root function.
-// @param tx_hash The transaction hash of the block.
-// @return The MMR root right after the block inclusion.
+// @dev This function gets the root of a given historical tree size of the MMR tree.
+// @notice This function calls the get_tree_size_to_root function.
+// @param tree_size The historical MMR tree size.
+// @return The MMR root right at that time.
 //
 @external
-func call_get_inclusion_tx_hash_to_root{
+func call_get_tree_size_to_root{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
-}(tx_hash: felt) -> (res: felt) {
-    let (res) = mmr_get_inclusion_tx_hash_to_root(tx_hash);
+}(tree_size: felt) -> (res: felt) {
+    let (res) = mmr_get_tree_size_to_root(tree_size);
     return (res=res);
 }
 
@@ -429,7 +422,6 @@ func validate_parent_block{
 // @param block_header_rlp_bytes_len The length of the block header RLP bytes array.
 // @param block_header_rlp_len The length of the block header RLP array.
 // @param block_header_rlp The array containing the block header RLP bytes.
-// @param inclusion_tx_hash The inclusion transaction hash of the block.
 // @param mmr_pos The MMR position at the proof generation time.
 //
 func validate_parent_block_and_proof_integrity{
@@ -447,7 +439,6 @@ func validate_parent_block_and_proof_integrity{
     block_header_rlp_bytes_len: felt,
     block_header_rlp_len: felt,
     block_header_rlp: felt*,
-    inclusion_tx_hash: felt,
     mmr_pos: felt,
 ) {
     alloc_locals;
@@ -459,7 +450,6 @@ func validate_parent_block_and_proof_integrity{
         proof=reference_proof,
         peaks_len=reference_proof_peaks_len,
         peaks=reference_proof_peaks,
-        inclusion_tx_hash=inclusion_tx_hash,
         mmr_pos=mmr_pos,
     );
 
@@ -503,9 +493,8 @@ func update_mmr{
     let (pedersen_hash) = hash_felts{hash_ptr=pedersen_ptr}(
         data=block_header_rlp, length=block_header_rlp_len
     );
-    let (info) = get_tx_info();
     mmr_append(
-        elem=pedersen_hash, peaks_len=mmr_peaks_len, peaks=mmr_peaks, tx_hash=info.transaction_hash
+        elem=pedersen_hash, peaks_len=mmr_peaks_len, peaks=mmr_peaks
     );
     let (local keccak_ptr: felt*) = alloc();
     let keccak_ptr_start = keccak_ptr;

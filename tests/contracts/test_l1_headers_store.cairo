@@ -36,7 +36,6 @@ namespace L1HeadersStore {
         block_header_rlp: felt*,
         mmr_peaks_len: felt,
         mmr_peaks: felt*,
-        inclusion_tx_hash: felt,
         mmr_pos: felt,
     ) {
     }
@@ -72,7 +71,6 @@ namespace L1HeadersStore {
         mmr_peaks_lens: felt*,
         mmr_peaks_concat_len: felt,
         mmr_peaks_concat: felt*,
-        inclusion_tx_hash: felt,
         mmr_pos: felt,
     ) {
     }
@@ -274,7 +272,6 @@ func test_process_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
         block_header_rlp=block_2_header_rlp,
         mmr_peaks_len=1,
         mmr_peaks=mmr_peaks,
-        inclusion_tx_hash=info.transaction_hash,
         mmr_pos=mmr_pos,
     );
     return ();
@@ -506,7 +503,6 @@ func test_process_till_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         mmr_peaks_lens=mmr_peaks_lens,
         mmr_peaks_concat_len=4,
         mmr_peaks_concat=mmr_peaks_concat,
-        inclusion_tx_hash=info.transaction_hash,
         mmr_pos=mmr_pos,
     );
     return ();

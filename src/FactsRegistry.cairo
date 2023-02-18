@@ -36,7 +36,6 @@ namespace IL1HeadersStore {
         proof: felt*,
         peaks_len: felt,
         peaks: felt*,
-        inclusion_tx_hash: felt,
         mmr_pos: felt,
     ) {
     }
@@ -188,7 +187,6 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 // @param block_header_rlp_len: The length of the `block_header_rlp` array, in words.
 // @param block_header_rlp: An array that contains the RLP-encoded block header.
 // @param block_header_rlp_bytes_len: The length of the RLP-encoded block header, in bytes.
-// @param inclusion_tx_hash: The hash of the transaction that includes the block header in the blockchain.
 // @param mmr_pos: The position of the block header in the MMR tree.
 //
 @external
@@ -213,7 +211,6 @@ func prove_account{
     block_header_rlp_len: felt,
     block_header_rlp: felt*,
     block_header_rlp_bytes_len: felt,
-    inclusion_tx_hash: felt,
     mmr_pos: felt,
 ) {
     alloc_locals;
@@ -239,7 +236,6 @@ func prove_account{
         proof=block_proof,
         peaks_len=block_proof_peaks_len,
         peaks=block_proof_peaks,
-        inclusion_tx_hash=inclusion_tx_hash,
         mmr_pos=mmr_pos,
     );
     let (pedersen_hash) = hash_felts{hash_ptr=pedersen_ptr}(

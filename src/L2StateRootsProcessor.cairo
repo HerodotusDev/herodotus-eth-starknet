@@ -32,7 +32,6 @@ namespace IL1HeadersStore {
         proof: felt*,
         peaks_len: felt,
         peaks: felt*,
-        inclusion_tx_hash: felt,
         mmr_pos: felt,
     ) {
     }
@@ -88,7 +87,6 @@ func process_state_root{
     mmr_inclusion_header_proof: felt*,
     mmr_inclusion_header_peaks_len: felt,
     mmr_inclusion_header_peaks: felt*,
-    mmr_inclusion_header_inclusion_tx_hash: felt,
     mmr_inclusion_header_pos: felt,
     l1_header_rlp_len: felt,
     l1_header_rlp: felt*,
@@ -115,7 +113,6 @@ func process_state_root{
         proof=mmr_inclusion_header_proof,
         peaks_len=mmr_inclusion_header_peaks_len,
         peaks=mmr_inclusion_header_peaks,
-        inclusion_tx_hash=mmr_inclusion_header_inclusion_tx_hash,
         mmr_pos=mmr_inclusion_header_pos,
     );
 
