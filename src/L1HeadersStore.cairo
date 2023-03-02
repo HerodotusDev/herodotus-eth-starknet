@@ -17,7 +17,7 @@ from lib.swap_endianness import swap_endianness_64
 from starkware.cairo.common.hash_state import hash_felts
 from cairo_mmr.src.historical_mmr import (
     append as mmr_append,
-    verify_past_proof as mmr_verify_past_proof,
+    verify_proof as mmr_verify_proof,
     get_last_pos as mmr_get_last_pos,
     get_tree_size_to_root as mmr_get_tree_size_to_root,
 )
@@ -124,8 +124,6 @@ func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check
 // @param reference_proof_leaf_value The value of the reference proof.
 // @param reference_proof_len The length of the reference block's proof array.
 // @param reference_proof The array containing the reference block's proof.
-// @param reference_proof_peaks_len The length of the peaks array in the reference block's proof.
-// @param reference_proof_peaks The array containing the peaks in the reference block's proof.
 // @param reference_header_rlp_bytes_len The length of the reference block header RLP bytes array.
 // @param reference_header_rlp_len The length of the reference block header RLP array.
 // @param reference_header_rlp The array containing the reference block header RLP bytes.
@@ -134,7 +132,6 @@ func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check
 // @param block_header_rlp The array containing the block header RLP bytes.
 // @param mmr_peaks_len The length of the MMR peaks array.
 // @param mmr_peaks The array containing the MMR peaks.
-// @param mmr_pos The MMR position at the proof generation time.
 //
 @external
 func process_block{
@@ -145,8 +142,6 @@ func process_block{
     reference_proof_leaf_value: felt,
     reference_proof_len: felt,
     reference_proof: felt*,
-    reference_proof_peaks_len: felt,
-    reference_proof_peaks: felt*,
     reference_header_rlp_bytes_len: felt,
     reference_header_rlp_len: felt,
     reference_header_rlp: felt*,
@@ -155,7 +150,6 @@ func process_block{
     block_header_rlp: felt*,
     mmr_peaks_len: felt,
     mmr_peaks: felt*,
-    mmr_pos: felt,
 ) {
     alloc_locals;
 
@@ -164,15 +158,14 @@ func process_block{
         reference_proof_leaf_value,
         reference_proof_len,
         reference_proof,
-        reference_proof_peaks_len,
-        reference_proof_peaks,
+        mmr_peaks_len,
+        mmr_peaks,
         reference_header_rlp_bytes_len,
         reference_header_rlp_len,
         reference_header_rlp,
         block_header_rlp_bytes_len,
         block_header_rlp_len,
         block_header_rlp,
-        mmr_pos,
     );
 
     update_mmr(
@@ -232,8 +225,6 @@ func process_till_block{
     reference_proof_leaf_value: felt,
     reference_proof_len: felt,
     reference_proof: felt*,
-    reference_proof_peaks_len: felt,
-    reference_proof_peaks: felt*,
     reference_header_rlp_bytes_len: felt,
     reference_header_rlp_len: felt,
     reference_header_rlp: felt*,
@@ -247,10 +238,14 @@ func process_till_block{
     mmr_peaks_lens: felt*,
     mmr_peaks_concat_len: felt,
     mmr_peaks_concat: felt*,
-    mmr_pos: felt,
 ) {
     alloc_locals;
     assert block_headers_lens_bytes_len = block_headers_lens_words_len;
+
+    let (local current_peaks: felt*) = alloc();
+    let (local updated_peaks_offset) = slice_arr(
+        0, mmr_peaks_lens[0], mmr_peaks_concat, mmr_peaks_concat_len, current_peaks, 0, 0
+    );
 
     // Verify the reference block proof and check its parent block
     validate_parent_block_and_proof_integrity(
@@ -258,20 +253,14 @@ func process_till_block{
         reference_proof_leaf_value,
         reference_proof_len,
         reference_proof,
-        reference_proof_peaks_len,
-        reference_proof_peaks,
+        mmr_peaks_lens[0],
+        current_peaks,
         reference_header_rlp_bytes_len,
         reference_header_rlp_len,
         reference_header_rlp,
         block_headers_lens_bytes[0],
         block_headers_lens_words[0],
         block_headers_concat,
-        mmr_pos,
-    );
-
-    let (local current_peaks: felt*) = alloc();
-    let (local updated_peaks_offset) = slice_arr(
-        0, mmr_peaks_lens[0], mmr_peaks_concat, mmr_peaks_concat_len, current_peaks, 0, 0
     );
 
     // Add the first block
@@ -318,28 +307,19 @@ func get_mmr_last_pos{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
 
 //
 // @dev This function verifies the past proof of a block in the MMR tree.
-// @notice This function calls the `mmr_verify_past_proof` function to verify the past proof of a block in the MMR tree.
+// @notice This function calls the `mmr_verify_proof` function to verify the proof of an element in the MMR tree.
 // @param index The leaf index of the block in the proof.
 // @param value The value of the block's leaf in the proof.
 // @param proof_len The length of the proof array.
 // @param proof The array containing the proof.
 // @param peaks_len The length of the peaks array in the proof.
 // @param peaks The array containing the peaks in the proof.
-// @param mmr_pos The MMR position of the block.
 //
 @external
-func call_mmr_verify_past_proof{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    index: felt,
-    value: felt,
-    proof_len: felt,
-    proof: felt*,
-    peaks_len: felt,
-    peaks: felt*,
-    mmr_pos: felt,
+func call_mmr_verify_proof{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    index: felt, value: felt, proof_len: felt, proof: felt*, peaks_len: felt, peaks: felt*
 ) {
-    mmr_verify_past_proof(
-        index, value, proof_len, proof, peaks_len, peaks, mmr_pos
-    );
+    mmr_verify_proof(index, value, proof_len, proof, peaks_len, peaks);
     return ();
 }
 
@@ -350,9 +330,9 @@ func call_mmr_verify_past_proof{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, 
 // @return The MMR root right at that time.
 //
 @external
-func call_get_tree_size_to_root{
-    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
-}(tree_size: felt) -> (res: felt) {
+func call_get_tree_size_to_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    tree_size: felt
+) -> (res: felt) {
     let (res) = mmr_get_tree_size_to_root(tree_size);
     return (res=res);
 }
@@ -422,7 +402,6 @@ func validate_parent_block{
 // @param block_header_rlp_bytes_len The length of the block header RLP bytes array.
 // @param block_header_rlp_len The length of the block header RLP array.
 // @param block_header_rlp The array containing the block header RLP bytes.
-// @param mmr_pos The MMR position at the proof generation time.
 //
 func validate_parent_block_and_proof_integrity{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
@@ -431,26 +410,24 @@ func validate_parent_block_and_proof_integrity{
     reference_proof_leaf_value: felt,
     reference_proof_len: felt,
     reference_proof: felt*,
-    reference_proof_peaks_len: felt,
-    reference_proof_peaks: felt*,
+    mmr_peaks_len: felt,
+    mmr_peaks: felt*,
     reference_header_rlp_bytes_len: felt,
     reference_header_rlp_len: felt,
     reference_header_rlp: felt*,
     block_header_rlp_bytes_len: felt,
     block_header_rlp_len: felt,
     block_header_rlp: felt*,
-    mmr_pos: felt,
 ) {
     alloc_locals;
 
-    call_mmr_verify_past_proof(
+    call_mmr_verify_proof(
         index=reference_proof_leaf_index,
         value=reference_proof_leaf_value,
         proof_len=reference_proof_len,
         proof=reference_proof,
-        peaks_len=reference_proof_peaks_len,
-        peaks=reference_proof_peaks,
-        mmr_pos=mmr_pos,
+        peaks_len=mmr_peaks_len,
+        peaks=mmr_peaks,
     );
 
     local rlp: IntsSequence = IntsSequence(
@@ -493,9 +470,7 @@ func update_mmr{
     let (pedersen_hash) = hash_felts{hash_ptr=pedersen_ptr}(
         data=block_header_rlp, length=block_header_rlp_len
     );
-    mmr_append(
-        elem=pedersen_hash, peaks_len=mmr_peaks_len, peaks=mmr_peaks
-    );
+    mmr_append(elem=pedersen_hash, peaks_len=mmr_peaks_len, peaks=mmr_peaks);
     let (local keccak_ptr: felt*) = alloc();
     let keccak_ptr_start = keccak_ptr;
 

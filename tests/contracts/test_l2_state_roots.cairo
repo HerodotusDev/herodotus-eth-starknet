@@ -36,9 +36,8 @@ namespace L2StateRootsProcessor {
         l1_inclusion_header_leaf_value: felt,
         l1_inclusion_header_proof_len: felt,
         l1_inclusion_header_proof: felt*,
-        l1_inclusion_header_peaks_len: felt,
-        l1_inclusion_header_peaks: felt*,
-        l1_inclusion_header_mmr_pos: felt,
+        mmr_peaks_len: felt,
+        mmr_peaks: felt*,
         l1_inclusion_header_rlp_len: felt,
         l1_inclusion_header_rlp: felt*,
         l1_inclusion_header_rlp_bytes_len: felt,
@@ -170,7 +169,6 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
     let (node1) = hash2{hash_ptr=pedersen_ptr}(1, pedersen_hash);
     let (local mmr_peaks: felt*) = alloc();
     assert mmr_peaks[0] = node1;
-    let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
 
     let (block_header_rlp: felt*) = alloc();
     local block_header_rlp_len;
@@ -271,9 +269,8 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         l1_inclusion_header_leaf_value=pedersen_hash,
         l1_inclusion_header_proof_len=0,
         l1_inclusion_header_proof=block_proof,
-        l1_inclusion_header_peaks_len=1,
-        l1_inclusion_header_peaks=mmr_peaks,
-        l1_inclusion_header_mmr_pos=mmr_pos,
+        mmr_peaks_len=1,
+        mmr_peaks=mmr_peaks,
         l1_inclusion_header_rlp_len=block_header_rlp_len,
         l1_inclusion_header_rlp=block_header_rlp,
         l1_inclusion_header_rlp_bytes_len=block_header_rlp_bytes_len,

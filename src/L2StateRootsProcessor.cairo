@@ -25,14 +25,8 @@ from lib.bytes import remove_leading_byte
 
 @contract_interface
 namespace IL1HeadersStore {
-    func call_mmr_verify_past_proof(
-        index: felt,
-        value: felt,
-        proof_len: felt,
-        proof: felt*,
-        peaks_len: felt,
-        peaks: felt*,
-        mmr_pos: felt,
+    func call_mmr_verify_proof(
+        index: felt, value: felt, proof_len: felt, proof: felt*, peaks_len: felt, peaks: felt*
     ) {
     }
 }
@@ -85,9 +79,8 @@ func process_state_root{
     mmr_inclusion_header_leaf_value: felt,
     mmr_inclusion_header_proof_len: felt,
     mmr_inclusion_header_proof: felt*,
-    mmr_inclusion_header_peaks_len: felt,
-    mmr_inclusion_header_peaks: felt*,
-    mmr_inclusion_header_pos: felt,
+    mmr_peaks_len: felt,
+    mmr_peaks: felt*,
     l1_header_rlp_len: felt,
     l1_header_rlp: felt*,
     l1_header_rlp_bytes_len: felt,
@@ -105,15 +98,14 @@ func process_state_root{
     let (local headers_store_addr) = _l1_headers_store_addr.read();
 
     // Verify the header inclusion in the headers store's MMR.
-    IL1HeadersStore.call_mmr_verify_past_proof(
+    IL1HeadersStore.call_mmr_verify_proof(
         contract_address=headers_store_addr,
         index=mmr_inclusion_header_leaf_index,
         value=mmr_inclusion_header_leaf_value,
         proof_len=mmr_inclusion_header_proof_len,
         proof=mmr_inclusion_header_proof,
-        peaks_len=mmr_inclusion_header_peaks_len,
-        peaks=mmr_inclusion_header_peaks,
-        mmr_pos=mmr_inclusion_header_pos,
+        peaks_len=mmr_peaks_len,
+        peaks=mmr_peaks,
     );
 
     local block_header: IntsSequence = IntsSequence(

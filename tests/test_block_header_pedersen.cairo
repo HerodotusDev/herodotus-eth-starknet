@@ -23,6 +23,7 @@ func test_compute_block_header_pedersen_hash{
         from utils.block_header import build_block_header
         from mocks.blocks import mocked_blocks
 
+        # 0x8407da492b7df20d2fe034a942a7c480c34eef978fe8b91ae98fcea4f3767125
         block = mocked_blocks[0]
         block_header = build_block_header(block)
 
@@ -31,6 +32,7 @@ func test_compute_block_header_pedersen_hash{
         ids.reference_block_number = block['number']
         ids.block_header_rlp_bytes_len = block_rlp.length
         segments.write_arg(ids.block_header_rlp, block_rlp.values)
+        print(block_rlp.values)
         ids.block_header_rlp_len = len(block_rlp.values)
     %}
 

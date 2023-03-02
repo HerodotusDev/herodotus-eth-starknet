@@ -44,12 +44,11 @@ namespace FactsRegistry {
         block_proof_leaf_value: felt,
         block_proof_len: felt,
         block_proof: felt*,
-        block_proof_peaks_len: felt,
-        block_proof_peaks: felt*,
+        mmr_peaks_len: felt,
+        mmr_peaks: felt*,
         block_header_rlp_len: felt,
         block_header_rlp: felt*,
         block_header_rlp_bytes_len: felt,
-        mmr_pos: felt,
     ) {
     }
 
@@ -246,7 +245,6 @@ func test_prove_account{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
         segments.write_arg(ids.proofs_concat, flat_proof)
     %}
     local account: Address = Address(account_word_1, account_word_2, account_word_3);
-    let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
     FactsRegistry.prove_account(
         contract_address=facts_registry,
         options_set=options_set,
@@ -262,12 +260,11 @@ func test_prove_account{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
         block_proof_leaf_value=pedersen_hash,
         block_proof_len=0,
         block_proof=block_proof,
-        block_proof_peaks_len=1,
-        block_proof_peaks=mmr_peaks,
+        mmr_peaks_len=1,
+        mmr_peaks=mmr_peaks,
         block_header_rlp_len=block_header_rlp_len,
         block_header_rlp=block_header_rlp,
         block_header_rlp_bytes_len=block_header_rlp_bytes_len,
-        mmr_pos=mmr_pos,
     );
 
     local account_160;
@@ -362,7 +359,6 @@ func test_get_storage{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
         segments.write_arg(ids.proofs_concat, flat_proof)
     %}
     local account: Address = Address(account_word_1, account_word_2, account_word_3);
-    let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
     FactsRegistry.prove_account(
         contract_address=facts_registry,
         options_set=options_set,
@@ -378,12 +374,11 @@ func test_get_storage{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
         block_proof_leaf_value=pedersen_hash,
         block_proof_len=0,
         block_proof=block_proof,
-        block_proof_peaks_len=1,
-        block_proof_peaks=mmr_peaks,
+        mmr_peaks_len=1,
+        mmr_peaks=mmr_peaks,
         block_header_rlp_len=block_header_rlp_len,
         block_header_rlp=block_header_rlp,
         block_header_rlp_bytes_len=block_header_rlp_bytes_len,
-        mmr_pos=mmr_pos,
     );
     local slot_word1;
     local slot_word2;
@@ -505,7 +500,6 @@ func test_get_storage_uint{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range
         segments.write_arg(ids.proofs_concat, flat_proof)
     %}
     local account: Address = Address(account_word_1, account_word_2, account_word_3);
-    let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
     FactsRegistry.prove_account(
         contract_address=facts_registry,
         options_set=options_set,
@@ -521,12 +515,11 @@ func test_get_storage_uint{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range
         block_proof_leaf_value=pedersen_hash,
         block_proof_len=0,
         block_proof=block_proof,
-        block_proof_peaks_len=1,
-        block_proof_peaks=mmr_peaks,
+        mmr_peaks_len=1,
+        mmr_peaks=mmr_peaks,
         block_header_rlp_len=block_header_rlp_len,
         block_header_rlp=block_header_rlp,
         block_header_rlp_bytes_len=block_header_rlp_bytes_len,
-        mmr_pos=mmr_pos,
     );
     local slot_word1;
     local slot_word2;

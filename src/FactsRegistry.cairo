@@ -29,14 +29,8 @@ from lib.swap_endianness import swap_endianness_64
 
 @contract_interface
 namespace IL1HeadersStore {
-    func call_mmr_verify_past_proof(
-        index: felt,
-        value: felt,
-        proof_len: felt,
-        proof: felt*,
-        peaks_len: felt,
-        peaks: felt*,
-        mmr_pos: felt,
+    func call_mmr_verify_proof(
+        index: felt, value: felt, proof_len: felt, proof: felt*, peaks_len: felt, peaks: felt*
     ) {
     }
 }
@@ -182,12 +176,11 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 // @param block_proof_leaf_value: The value of the leaf node in the Merkle proof for the block header.
 // @param block_proof_len: The length of the `block_proof` array, in words.
 // @param block_proof: An array that contains the Merkle proof for the block header.
-// @param block_proof_peaks_len: The length of the `block_proof_peaks` array, in words.
-// @param block_proof_peaks: An array that contains the peak indices for the Merkle proof of the block header.
+// @param mmr_peaks_len: The number of peaks.
+// @param mmr_peaks: An array that contains the latest MMR peaks hashes.
 // @param block_header_rlp_len: The length of the `block_header_rlp` array, in words.
 // @param block_header_rlp: An array that contains the RLP-encoded block header.
 // @param block_header_rlp_bytes_len: The length of the RLP-encoded block header, in bytes.
-// @param mmr_pos: The position of the block header in the MMR tree.
 //
 @external
 func prove_account{
@@ -206,12 +199,11 @@ func prove_account{
     block_proof_leaf_value: felt,
     block_proof_len: felt,
     block_proof: felt*,
-    block_proof_peaks_len: felt,
-    block_proof_peaks: felt*,
+    mmr_peaks_len: felt,
+    mmr_peaks: felt*,
     block_header_rlp_len: felt,
     block_header_rlp: felt*,
     block_header_rlp_bytes_len: felt,
-    mmr_pos: felt,
 ) {
     alloc_locals;
     let (local account_raw) = alloc();
@@ -228,15 +220,14 @@ func prove_account{
     local path: IntsSequence = IntsSequence(path_raw, 4, 32);
     let (local headers_store_addr) = _l1_headers_store_addr.read();
 
-    IL1HeadersStore.call_mmr_verify_past_proof(
+    IL1HeadersStore.call_mmr_verify_proof(
         contract_address=headers_store_addr,
         index=block_proof_leaf_index,
         value=block_proof_leaf_value,
         proof_len=block_proof_len,
         proof=block_proof,
-        peaks_len=block_proof_peaks_len,
-        peaks=block_proof_peaks,
-        mmr_pos=mmr_pos,
+        peaks_len=mmr_peaks_len,
+        peaks=mmr_peaks,
     );
     let (pedersen_hash) = hash_felts{hash_ptr=pedersen_ptr}(
         data=block_header_rlp, length=block_header_rlp_len

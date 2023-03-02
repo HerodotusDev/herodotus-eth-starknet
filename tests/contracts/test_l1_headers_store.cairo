@@ -26,8 +26,6 @@ namespace L1HeadersStore {
         reference_proof_leaf_value: felt,
         reference_proof_len: felt,
         reference_proof: felt*,
-        reference_proof_peaks_len: felt,
-        reference_proof_peaks: felt*,
         reference_header_rlp_bytes_len: felt,
         reference_header_rlp_len: felt,
         reference_header_rlp: felt*,
@@ -36,7 +34,6 @@ namespace L1HeadersStore {
         block_header_rlp: felt*,
         mmr_peaks_len: felt,
         mmr_peaks: felt*,
-        mmr_pos: felt,
     ) {
     }
 
@@ -56,8 +53,6 @@ namespace L1HeadersStore {
         reference_proof_leaf_value: felt,
         reference_proof_len: felt,
         reference_proof: felt*,
-        reference_proof_peaks_len: felt,
-        reference_proof_peaks: felt*,
         reference_header_rlp_bytes_len: felt,
         reference_header_rlp_len: felt,
         reference_header_rlp: felt*,
@@ -71,7 +66,6 @@ namespace L1HeadersStore {
         mmr_peaks_lens: felt*,
         mmr_peaks_concat_len: felt,
         mmr_peaks_concat: felt*,
-        mmr_pos: felt,
     ) {
     }
 
@@ -252,9 +246,6 @@ func test_process_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
         ids.block_2_number_process_block = block['number'] + 1
     %}
 
-    let (info) = get_tx_info();
-    let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
-
     L1HeadersStore.process_block(
         contract_address=l1_headers_store,
         reference_block_number=block_2_number_process_block,
@@ -262,8 +253,6 @@ func test_process_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
         reference_proof_leaf_value=pedersen_hash,
         reference_proof_len=0,
         reference_proof=proof,
-        reference_proof_peaks_len=1,
-        reference_proof_peaks=mmr_peaks,
         reference_header_rlp_bytes_len=block_header_rlp_bytes_len,
         reference_header_rlp_len=block_header_rlp_len,
         reference_header_rlp=block_header_rlp,
@@ -272,7 +261,6 @@ func test_process_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
         block_header_rlp=block_2_header_rlp,
         mmr_peaks_len=1,
         mmr_peaks=mmr_peaks,
-        mmr_pos=mmr_pos,
     );
     return ();
 }
@@ -479,8 +467,6 @@ func test_process_till_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
     let (mmr_peaks_lens: felt*) = alloc();
     %{ segments.write_arg(ids.mmr_peaks_lens, [1, 1, 2]) %}
 
-    let (info) = get_tx_info();
-    let (mmr_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
     L1HeadersStore.process_till_block(
         contract_address=l1_headers_store,
         reference_block_number=start_block_number,
@@ -488,8 +474,6 @@ func test_process_till_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         reference_proof_leaf_value=pedersen_hash,
         reference_proof_len=0,
         reference_proof=proof,
-        reference_proof_peaks_len=1,
-        reference_proof_peaks=mmr_peaks,
         reference_header_rlp_bytes_len=block_header_rlp_bytes_len,
         reference_header_rlp_len=block_header_rlp_len,
         reference_header_rlp=block_header_rlp,
@@ -503,7 +487,6 @@ func test_process_till_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         mmr_peaks_lens=mmr_peaks_lens,
         mmr_peaks_concat_len=4,
         mmr_peaks_concat=mmr_peaks_concat,
-        mmr_pos=mmr_pos,
     );
     return ();
 }
