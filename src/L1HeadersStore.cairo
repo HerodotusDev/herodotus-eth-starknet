@@ -15,11 +15,10 @@ from lib.blockheader_rlp_extractor import decode_parent_hash, decode_block_numbe
 from lib.bitset import bitset_get
 from lib.swap_endianness import swap_endianness_64
 from starkware.cairo.common.hash_state import hash_felts
-from cairo_mmr.src.historical_mmr import (
+from cairo_mmr.src.mmr import (
     append as mmr_append,
     verify_proof as mmr_verify_proof,
     get_last_pos as mmr_get_last_pos,
-    get_tree_size_to_root as mmr_get_tree_size_to_root,
 )
 
 @event
@@ -321,20 +320,6 @@ func call_mmr_verify_proof{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range
 ) {
     mmr_verify_proof(index, value, proof_len, proof, peaks_len, peaks);
     return ();
-}
-
-//
-// @dev This function gets the root of a given historical tree size of the MMR tree.
-// @notice This function calls the get_tree_size_to_root function.
-// @param tree_size The historical MMR tree size.
-// @return The MMR root right at that time.
-//
-@external
-func call_get_tree_size_to_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    tree_size: felt
-) -> (res: felt) {
-    let (res) = mmr_get_tree_size_to_root(tree_size);
-    return (res=res);
 }
 
 //
