@@ -29,12 +29,18 @@ func accumulator_update(
     keccak_hash_word_2: felt,
     keccak_hash_word_3: felt,
     keccak_hash_word_4: felt,
+    update_id: felt,
 ) {
 }
 
 // Temporary auth var for authenticating mocked L1 handlers.
 @storage_var
 func _l1_messages_origin() -> (res: felt) {
+}
+
+// Keeps count of the accumulator updates.
+@storage_var
+func _latest_accumulator_update_id() -> (res: felt) {
 }
 
 // Stores the latest commited L1 block.
@@ -65,6 +71,14 @@ func get_latest_commitments_l1_block{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() -> (res: felt) {
     return _commitments_latest_l1_block.read();
+}
+
+// Returns the latest accumulator update id.
+@view
+func get_latest_accumulator_update_id{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() -> (res: felt) {
+    return _latest_accumulator_update_id.read();
 }
 
 @constructor
@@ -471,8 +485,11 @@ func update_mmr{
     local word_3 = keccak_hash[2];
     local word_4 = keccak_hash[3];
 
+    let (local update_id) = _latest_accumulator_update_id.read();
+    _latest_accumulator_update_id.write(update_id + 1);
+
     // Emit the update event
-    accumulator_update.emit(pedersen_hash, processed_block_number, word_1, word_2, word_3, word_4);
+    accumulator_update.emit(pedersen_hash, processed_block_number, word_1, word_2, word_3, word_4, update_id);
     return ();
 }
 
