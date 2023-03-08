@@ -25,6 +25,11 @@ namespace L1HeadersStore {
     ) {
     }
 
+    // Returns the last saved MMR root.
+    func get_mmr_root() -> (res: felt) {
+    }
+
+    // Returns the last saved MMR position (tree size).
     func get_mmr_last_pos() -> (res: felt) {
     }
 }
@@ -50,6 +55,7 @@ namespace L2StateRootsProcessor {
         receipt_inclusion_proof_sizes_words: felt*,
         receipt_inclusion_proof_concat_len: felt,
         receipt_inclusion_proof_concat: felt*,
+        mmr_pos: felt,
     ) {
     }
 }
@@ -263,6 +269,7 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
     %}
 
     let (local block_proof: felt*) = alloc();
+    let (mmr_last_pos) = L1HeadersStore.get_mmr_last_pos(contract_address=l1_headers_store);
     L2StateRootsProcessor.process_state_root(
         contract_address=state_roots_processor,
         l1_inclusion_header_leaf_index=1,
@@ -283,6 +290,7 @@ func test_process_state_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         receipt_inclusion_proof_sizes_words=receipt_proof_sizes_words,
         receipt_inclusion_proof_concat_len=receipt_proof_concat_len,
         receipt_inclusion_proof_concat=receipt_proof_concat,
+        mmr_pos=mmr_last_pos,
     );
     return ();
 }
