@@ -233,6 +233,8 @@ func prove_account{
     let (local headers_store_addr) = _l1_headers_store_addr.read();
 
     // Root hash for `mmr_pos` must have been written to storage before.
+    // @notice `mmr_pos` is the tree size at the time of inclusion of the
+    // last element within the proof.
     let (mmr_root) = IL1HeadersStore.get_tree_size_to_root(
         contract_address=headers_store_addr, tree_size=mmr_pos
     );

@@ -319,6 +319,7 @@ func process_till_block{
     assert_not_zero(mmr_root);
 
     // Verify the reference block proof and check its parent block
+    // We ensure that the first block header (the most recent) has its reference block in the MMR.
     validate_parent_block_and_proof_integrity(
         reference_proof_leaf_index,
         reference_proof_leaf_value,
@@ -349,7 +350,7 @@ func process_till_block{
         pedersen_hash,
     );
 
-    // Process the remaining blocks and recursively update the MMR tree.
+    // Process the remaining blocks (consecutive parents) and recursively update the MMR tree.
     let (elems_len: felt) = process_till_block_rec(
         block_headers_lens_bytes_len,
         block_headers_lens_bytes,
@@ -366,6 +367,7 @@ func process_till_block{
 
     let (mmr_last_pos) = _mmr_last_pos.read();
     let (mmr_last_root) = _mmr_root.read();
+    // Batch appends to the MMR tree.
     let (new_pos, new_root) = mmr_multi_append(
         elems_len=elems_len,
         elems=elems,
