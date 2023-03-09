@@ -4,6 +4,7 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.math import assert_not_zero
 from starkware.cairo.common.memcpy import memcpy
 
 from lib.types import (
@@ -26,8 +27,18 @@ from lib.bytes import remove_leading_byte
 @contract_interface
 namespace IL1HeadersStore {
     func call_mmr_verify_proof(
-        index: felt, value: felt, proof_len: felt, proof: felt*, peaks_len: felt, peaks: felt*
+        index: felt,
+        value: felt,
+        proof_len: felt,
+        proof: felt*,
+        peaks_len: felt,
+        peaks: felt*,
+        pos: felt,
+        root: felt,
     ) {
+    }
+
+    func get_tree_size_to_root(tree_size: felt) -> (res: felt) {
     }
 }
 
@@ -93,9 +104,16 @@ func process_state_root{
     receipt_inclusion_proof_sizes_words: felt*,
     receipt_inclusion_proof_concat_len: felt,
     receipt_inclusion_proof_concat: felt*,
+    mmr_pos: felt,
 ) {
     alloc_locals;
     let (local headers_store_addr) = _l1_headers_store_addr.read();
+
+    // Root hash for `mmr_pos` must have been written to storage before.
+    let (mmr_root) = IL1HeadersStore.get_tree_size_to_root(
+        contract_address=headers_store_addr, tree_size=mmr_pos
+    );
+    assert_not_zero(mmr_root);
 
     // Verify the header inclusion in the headers store's MMR.
     IL1HeadersStore.call_mmr_verify_proof(
@@ -106,6 +124,8 @@ func process_state_root{
         proof=mmr_inclusion_header_proof,
         peaks_len=mmr_peaks_len,
         peaks=mmr_peaks,
+        pos=mmr_pos,
+        root=mmr_root,
     );
 
     local block_header: IntsSequence = IntsSequence(

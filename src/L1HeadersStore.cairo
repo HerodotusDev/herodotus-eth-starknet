@@ -6,6 +6,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.starknet.common.syscalls import get_caller_address
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.math_cmp import is_le
+from starkware.cairo.common.math import assert_not_zero
 
 from starkware.cairo.common.cairo_keccak.keccak import finalize_keccak
 
@@ -15,10 +16,10 @@ from lib.blockheader_rlp_extractor import decode_parent_hash, decode_block_numbe
 from lib.bitset import bitset_get
 from lib.swap_endianness import swap_endianness_64
 from starkware.cairo.common.hash_state import hash_felts
-from cairo_mmr.src.mmr import (
+from cairo_mmr.src.stateless_mmr import (
     append as mmr_append,
+    multi_append as mmr_multi_append,
     verify_proof as mmr_verify_proof,
-    get_last_pos as mmr_get_last_pos,
 )
 
 @event
@@ -29,12 +30,33 @@ func accumulator_update(
     keccak_hash_word_2: felt,
     keccak_hash_word_3: felt,
     keccak_hash_word_4: felt,
+    update_id: felt,
 ) {
+}
+
+// MMR saved root hash.
+@storage_var
+func _mmr_root() -> (res: felt) {
+}
+
+// MMR last saved tree size (last position).
+@storage_var
+func _mmr_last_pos() -> (res: felt) {
+}
+
+// tree_size -> saved root hash.
+@storage_var
+func _tree_size_to_root(tree_size: felt) -> (res: felt) {
 }
 
 // Temporary auth var for authenticating mocked L1 handlers.
 @storage_var
 func _l1_messages_origin() -> (res: felt) {
+}
+
+// Keeps count of the accumulator updates.
+@storage_var
+func _latest_accumulator_update_id() -> (res: felt) {
 }
 
 // Stores the latest commited L1 block.
@@ -51,6 +73,31 @@ func _commitments_block_parent_hash(block_number: felt) -> (res: Keccak256Hash) 
 //                   VIEW FUNCTIONS
 //###################################################
 
+// Returns the last saved MMR root.
+@view
+func get_mmr_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
+    res: felt
+) {
+    return _mmr_root.read();
+}
+
+// Returns the last saved MMR position (tree size).
+@view
+func get_mmr_last_pos{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
+    res: felt
+) {
+    return _mmr_last_pos.read();
+}
+
+// Returns the root related to a specific tree size (if any).
+// @notice The tree size must have been previously written to contract storage.
+@view
+func get_tree_size_to_root{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    tree_size: felt
+) -> (res: felt) {
+    return _tree_size_to_root.read(tree_size);
+}
+
 // Returns the Keccak hash of a given block number (if known).
 @view
 func get_commitments_parent_hash{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
@@ -65,6 +112,14 @@ func get_latest_commitments_l1_block{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() -> (res: felt) {
     return _commitments_latest_l1_block.read();
+}
+
+// Returns the latest accumulator update id.
+@view
+func get_latest_accumulator_update_id{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() -> (res: felt) {
+    return _latest_accumulator_update_id.read();
 }
 
 @constructor
@@ -152,6 +207,9 @@ func process_block{
 ) {
     alloc_locals;
 
+    let (mmr_last_pos) = _mmr_last_pos.read();
+    let (mmr_last_root) = _mmr_root.read();
+
     validate_parent_block_and_proof_integrity(
         reference_proof_leaf_index,
         reference_proof_leaf_value,
@@ -165,10 +223,18 @@ func process_block{
         block_header_rlp_bytes_len,
         block_header_rlp_len,
         block_header_rlp,
+        mmr_last_pos,
+        mmr_last_root,
     );
 
     update_mmr(
-        block_header_rlp_bytes_len, block_header_rlp_len, block_header_rlp, mmr_peaks_len, mmr_peaks
+        block_header_rlp_bytes_len,
+        block_header_rlp_len,
+        block_header_rlp,
+        mmr_peaks_len,
+        mmr_peaks,
+        mmr_last_pos,
+        mmr_last_root,
     );
     return ();
 }
@@ -208,8 +274,16 @@ func process_block_from_message{
         child_block_parent_hash, block_header_rlp_bytes_len, block_header_rlp_len, block_header_rlp
     );
 
+    let (mmr_last_pos) = _mmr_last_pos.read();
+    let (mmr_last_root) = _mmr_root.read();
     update_mmr(
-        block_header_rlp_bytes_len, block_header_rlp_len, block_header_rlp, mmr_peaks_len, mmr_peaks
+        block_header_rlp_bytes_len,
+        block_header_rlp_len,
+        block_header_rlp,
+        mmr_peaks_len,
+        mmr_peaks,
+        mmr_last_pos,
+        mmr_last_root,
     );
     return ();
 }
@@ -233,75 +307,80 @@ func process_till_block{
     block_headers_lens_words: felt*,
     block_headers_concat_len: felt,
     block_headers_concat: felt*,
-    mmr_peaks_lens_len: felt,
-    mmr_peaks_lens: felt*,
-    mmr_peaks_concat_len: felt,
-    mmr_peaks_concat: felt*,
+    mmr_peaks_len: felt,
+    mmr_peaks: felt*,
+    mmr_pos: felt,
 ) {
     alloc_locals;
     assert block_headers_lens_bytes_len = block_headers_lens_words_len;
 
-    let (local current_peaks: felt*) = alloc();
-    let (local updated_peaks_offset) = slice_arr(
-        0, mmr_peaks_lens[0], mmr_peaks_concat, mmr_peaks_concat_len, current_peaks, 0, 0
-    );
+    // Root hash for `mmr_pos` must have been written to storage before.
+    let (mmr_root) = _tree_size_to_root.read(mmr_pos);
+    assert_not_zero(mmr_root);
 
     // Verify the reference block proof and check its parent block
+    // We ensure that the first block header (the most recent) has its reference block in the MMR.
     validate_parent_block_and_proof_integrity(
         reference_proof_leaf_index,
         reference_proof_leaf_value,
         reference_proof_len,
         reference_proof,
-        mmr_peaks_lens[0],
-        current_peaks,
+        mmr_peaks_len,
+        mmr_peaks,
         reference_header_rlp_bytes_len,
         reference_header_rlp_len,
         reference_header_rlp,
         block_headers_lens_bytes[0],
         block_headers_lens_words[0],
         block_headers_concat,
+        mmr_pos,
+        mmr_root,
     );
 
-    // Add the first block
-    update_mmr(
+    // Add the first block.
+    let (pedersen_hash) = hash_felts{hash_ptr=pedersen_ptr}(
+        data=block_headers_concat, length=block_headers_lens_words[0]
+    );
+    let (elems: felt*) = alloc();
+    let (new_elems_len) = add_mmr_update_element(0, elems, pedersen_hash);
+    emit_mmr_update_event(
         block_headers_lens_bytes[0],
         block_headers_lens_words[0],
         block_headers_concat,
-        mmr_peaks_lens[0],
-        current_peaks,
+        pedersen_hash,
     );
 
-    // Process the remaining blocks and recursively update the MMR tree.
-    process_till_block_rec(
+    // Process the remaining blocks (consecutive parents) and recursively update the MMR tree.
+    let (elems_len: felt) = process_till_block_rec(
         block_headers_lens_bytes_len,
         block_headers_lens_bytes,
         block_headers_lens_words_len,
         block_headers_lens_words,
         block_headers_concat_len,
         block_headers_concat,
-        mmr_peaks_lens_len,
-        mmr_peaks_lens,
-        mmr_peaks_concat_len,
-        mmr_peaks_concat,
         0,
         0,
         0,
-        updated_peaks_offset,
+        new_elems_len,
+        elems,
     );
-    return ();
-}
 
-//
-// @dev This function gets the last position in the MMR tree.
-// @notice This function calls the `mmr_get_last_pos` function to get the last position in the MMR tree.
-// @return The last position in the MMR tree.
-//
-@external
-func get_mmr_last_pos{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
-    res: felt
-) {
-    let (last_pos) = mmr_get_last_pos();
-    return (res=last_pos);
+    let (mmr_last_pos) = _mmr_last_pos.read();
+    let (mmr_last_root) = _mmr_root.read();
+    // Batch appends to the MMR tree.
+    let (new_pos, new_root) = mmr_multi_append(
+        elems_len=elems_len,
+        elems=elems,
+        peaks_len=mmr_peaks_len,
+        peaks=mmr_peaks,
+        last_pos=mmr_last_pos,
+        last_root=mmr_last_root,
+    );
+    // Update contract storage
+    _mmr_last_pos.write(new_pos);
+    _mmr_root.write(new_root);
+    _tree_size_to_root.write(new_pos, new_root);
+    return ();
 }
 
 //
@@ -313,12 +392,21 @@ func get_mmr_last_pos{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
 // @param proof The array containing the proof.
 // @param peaks_len The length of the peaks array in the proof.
 // @param peaks The array containing the peaks in the proof.
+// @param pos The MMR last pos for this proof.
+// @param root The MMR root for this proof.
 //
 @external
 func call_mmr_verify_proof{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    index: felt, value: felt, proof_len: felt, proof: felt*, peaks_len: felt, peaks: felt*
+    index: felt,
+    value: felt,
+    proof_len: felt,
+    proof: felt*,
+    peaks_len: felt,
+    peaks: felt*,
+    pos: felt,
+    root: felt,
 ) {
-    mmr_verify_proof(index, value, proof_len, proof, peaks_len, peaks);
+    mmr_verify_proof(index, value, proof_len, proof, peaks_len, peaks, pos, root);
     return ();
 }
 
@@ -387,6 +475,8 @@ func validate_parent_block{
 // @param block_header_rlp_bytes_len The length of the block header RLP bytes array.
 // @param block_header_rlp_len The length of the block header RLP array.
 // @param block_header_rlp The array containing the block header RLP bytes.
+// @param mmr_pos The MMR pos (i.e., tree size) for the proof.
+// @param mmr_root The MMR root of the given tree size.
 //
 func validate_parent_block_and_proof_integrity{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
@@ -403,6 +493,8 @@ func validate_parent_block_and_proof_integrity{
     block_header_rlp_bytes_len: felt,
     block_header_rlp_len: felt,
     block_header_rlp: felt*,
+    mmr_pos: felt,
+    mmr_root: felt,
 ) {
     alloc_locals;
 
@@ -413,6 +505,8 @@ func validate_parent_block_and_proof_integrity{
         proof=reference_proof,
         peaks_len=mmr_peaks_len,
         peaks=mmr_peaks,
+        pos=mmr_pos,
+        root=mmr_root,
     );
 
     local rlp: IntsSequence = IntsSequence(
@@ -431,31 +525,23 @@ func validate_parent_block_and_proof_integrity{
     return ();
 }
 
-//
-// @dev This function updates the MMR tree with a new block.
-// @notice This function computes the Pedersen hash of the given block and appends it to the MMR tree.
-// It then emits the `AccumulatorUpdate` event with the processed block number, the Pedersen hash, and the Keccak256 hash of the block.
-// @param block_header_rlp_bytes_len The length of the block header RLP in bytes.
-// @param block_header_rlp_len The length of the block header RLP in felts.
-// @param block_header_rlp The block header RLP.
-// @param mmr_peaks_len The length of the MMR peaks array.
-// @param mmr_peaks The array of MMR peaks.
-//
-func update_mmr{
+func add_mmr_update_element{
+    pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(elems_len: felt, elems: felt*, elem: felt) -> (new_elems_len: felt) {
+    assert elems[elems_len] = elem;
+    return (new_elems_len=elems_len + 1);
+}
+
+func emit_mmr_update_event{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(
     block_header_rlp_bytes_len: felt,
     block_header_rlp_len: felt,
     block_header_rlp: felt*,
-    mmr_peaks_len: felt,
-    mmr_peaks: felt*,
+    pedersen_hash: felt,
 ) {
     alloc_locals;
 
-    let (pedersen_hash) = hash_felts{hash_ptr=pedersen_ptr}(
-        data=block_header_rlp, length=block_header_rlp_len
-    );
-    mmr_append(elem=pedersen_hash, peaks_len=mmr_peaks_len, peaks=mmr_peaks);
     let (local keccak_ptr: felt*) = alloc();
     let keccak_ptr_start = keccak_ptr;
 
@@ -471,9 +557,61 @@ func update_mmr{
     local word_3 = keccak_hash[2];
     local word_4 = keccak_hash[3];
 
+    let (local update_id) = _latest_accumulator_update_id.read();
+    _latest_accumulator_update_id.write(update_id + 1);
     // Emit the update event
-    accumulator_update.emit(pedersen_hash, processed_block_number, word_1, word_2, word_3, word_4);
+    accumulator_update.emit(
+        pedersen_hash, processed_block_number, word_1, word_2, word_3, word_4, update_id
+    );
     return ();
+}
+
+//
+// @dev This function updates the MMR tree with a new block.
+// @notice This function computes the Pedersen hash of the given block and appends it to the MMR tree.
+// It then emits the `AccumulatorUpdate` event with the processed block number, the Pedersen hash, and the Keccak256 hash of the block.
+// @param block_header_rlp_bytes_len The length of the block header RLP in bytes.
+// @param block_header_rlp_len The length of the block header RLP in felts.
+// @param block_header_rlp The block header RLP.
+// @param mmr_peaks_len The length of the MMR peaks array.
+// @param mmr_peaks The array of MMR peaks.
+// @param mmr_last_pos The MMR last pos (i.e., tree size).
+// @param mmr_last_root The MMR last root.
+//
+func update_mmr{
+    pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
+}(
+    block_header_rlp_bytes_len: felt,
+    block_header_rlp_len: felt,
+    block_header_rlp: felt*,
+    mmr_peaks_len: felt,
+    mmr_peaks: felt*,
+    mmr_last_pos: felt,
+    mmr_last_root: felt,
+) -> (last_pos: felt, last_root: felt) {
+    alloc_locals;
+
+    let (pedersen_hash) = hash_felts{hash_ptr=pedersen_ptr}(
+        data=block_header_rlp, length=block_header_rlp_len
+    );
+    let (new_pos, new_root) = mmr_append(
+        elem=pedersen_hash,
+        peaks_len=mmr_peaks_len,
+        peaks=mmr_peaks,
+        last_pos=mmr_last_pos,
+        last_root=mmr_last_root,
+    );
+
+    emit_mmr_update_event(
+        block_header_rlp_bytes_len, block_header_rlp_len, block_header_rlp, pedersen_hash
+    );
+    // Update contract storage
+
+    _mmr_last_pos.write(new_pos);
+    _mmr_root.write(new_root);
+    _tree_size_to_root.write(new_pos, new_root);
+
+    return (last_pos=new_pos, last_root=new_root);
 }
 
 //
@@ -488,19 +626,16 @@ func process_till_block_rec{
     block_headers_lens_words: felt*,
     block_headers_concat_len: felt,
     block_headers_concat: felt*,
-    mmr_peaks_lens_len: felt,
-    mmr_peaks_lens: felt*,
-    mmr_peaks_concat_len: felt,
-    mmr_peaks_concat: felt*,
     header_index: felt,
     child_offset: felt,
     parent_offset: felt,
-    peaks_offset: felt,
-) {
+    elems_len: felt,
+    elems: felt*,
+) -> (new_elems_len: felt) {
     alloc_locals;
 
     if (header_index == block_headers_lens_bytes_len - 1) {
-        return ();
+        return (new_elems_len=elems_len);
     }
 
     let (local current_child: felt*) = alloc();
@@ -534,22 +669,15 @@ func process_till_block_rec{
         parent_header_rlp=current_parent,
     );
 
-    let (local current_peaks: felt*) = alloc();
-    let (local updated_peaks_offset) = slice_arr(
-        peaks_offset,
-        mmr_peaks_lens[peaks_offset],
-        mmr_peaks_concat,
-        mmr_peaks_concat_len,
-        current_peaks,
-        0,
-        0,
+    let (pedersen_hash) = hash_felts{hash_ptr=pedersen_ptr}(
+        data=current_parent, length=block_headers_lens_words[header_index + 1]
     );
-    update_mmr(
+    let (new_elems_len) = add_mmr_update_element(elems_len, elems, pedersen_hash);
+    emit_mmr_update_event(
         block_headers_lens_bytes[header_index + 1],
         block_headers_lens_words[header_index + 1],
         current_parent,
-        mmr_peaks_lens[peaks_offset],
-        current_peaks,
+        pedersen_hash,
     );
 
     return process_till_block_rec(
@@ -559,14 +687,11 @@ func process_till_block_rec{
         block_headers_lens_words,
         block_headers_concat_len,
         block_headers_concat,
-        mmr_peaks_lens_len,
-        mmr_peaks_lens,
-        mmr_peaks_concat_len,
-        mmr_peaks_concat,
         header_index + 1,
         updated_child_offset,
         updated_parent_offset,
-        updated_peaks_offset,
+        new_elems_len,
+        elems,
     );
 }
 

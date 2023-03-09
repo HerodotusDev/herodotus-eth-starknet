@@ -62,14 +62,10 @@ namespace L1HeadersStore {
         block_headers_lens_words: felt*,
         block_headers_concat_len: felt,
         block_headers_concat: felt*,
-        mmr_peaks_lens_len: felt,
-        mmr_peaks_lens: felt*,
-        mmr_peaks_concat_len: felt,
-        mmr_peaks_concat: felt*,
+        mmr_peaks_len: felt,
+        mmr_peaks: felt*,
+        mmr_pos: felt,
     ) {
-    }
-
-    func get_mmr_last_pos() -> (res: felt) {
     }
 }
 
@@ -483,10 +479,9 @@ func test_process_till_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         block_headers_lens_words=block_headers_lens_words,
         block_headers_concat_len=block_headers_concat_len,
         block_headers_concat=block_headers_concat,
-        mmr_peaks_lens_len=3,
-        mmr_peaks_lens=mmr_peaks_lens,
-        mmr_peaks_concat_len=4,
-        mmr_peaks_concat=mmr_peaks_concat,
+        mmr_peaks_len=1,
+        mmr_peaks=mmr_peaks,
+        mmr_pos=1,
     );
     return ();
 }

@@ -30,8 +30,18 @@ from lib.swap_endianness import swap_endianness_64
 @contract_interface
 namespace IL1HeadersStore {
     func call_mmr_verify_proof(
-        index: felt, value: felt, proof_len: felt, proof: felt*, peaks_len: felt, peaks: felt*
+        index: felt,
+        value: felt,
+        proof_len: felt,
+        proof: felt*,
+        peaks_len: felt,
+        peaks: felt*,
+        pos: felt,
+        root: felt,
     ) {
+    }
+
+    func get_tree_size_to_root(tree_size: felt) -> (res: felt) {
     }
 }
 
@@ -181,6 +191,7 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 // @param block_header_rlp_len: The length of the `block_header_rlp` array, in words.
 // @param block_header_rlp: An array that contains the RLP-encoded block header.
 // @param block_header_rlp_bytes_len: The length of the RLP-encoded block header, in bytes.
+// @param mmr_pos The MMR pos (i.e., tree size) for the proof.
 //
 @external
 func prove_account{
@@ -204,6 +215,7 @@ func prove_account{
     block_header_rlp_len: felt,
     block_header_rlp: felt*,
     block_header_rlp_bytes_len: felt,
+    mmr_pos: felt,
 ) {
     alloc_locals;
     let (local account_raw) = alloc();
@@ -220,6 +232,14 @@ func prove_account{
     local path: IntsSequence = IntsSequence(path_raw, 4, 32);
     let (local headers_store_addr) = _l1_headers_store_addr.read();
 
+    // Root hash for `mmr_pos` must have been written to storage before.
+    // @notice `mmr_pos` is the tree size at the time of inclusion of the
+    // last element within the proof.
+    let (mmr_root) = IL1HeadersStore.get_tree_size_to_root(
+        contract_address=headers_store_addr, tree_size=mmr_pos
+    );
+    assert_not_zero(mmr_root);
+
     IL1HeadersStore.call_mmr_verify_proof(
         contract_address=headers_store_addr,
         index=block_proof_leaf_index,
@@ -228,6 +248,8 @@ func prove_account{
         proof=block_proof,
         peaks_len=mmr_peaks_len,
         peaks=mmr_peaks,
+        pos=mmr_pos,
+        root=mmr_root,
     );
     let (pedersen_hash) = hash_felts{hash_ptr=pedersen_ptr}(
         data=block_header_rlp, length=block_header_rlp_len
