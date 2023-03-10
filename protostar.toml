@@ -6,12 +6,16 @@ cairo-path = ["lib/cairo_contracts/src", "lib/cairo_mmr", "lib", "tests"]
 
 [contracts]
 Account = ["src/external/Account.cairo"]
-FactsRegistry = ["src/FactsRegistry.cairo"]
-L1HeadersStore = ["src/L1HeadersStore.cairo"]
-L1MessagesProxy = ["src/L1MessagesProxy.cairo"]
-L2StateRootsProcessor = ["src/L2StateRootsProcessor.cairo"]
-TWAP = ["src/TWAP.cairo"]
-ERC2O = ["lib/cairo_contracts/src/openzeppelin/token/erc20/presets/ERC20.cairo"]
+
+EvmFactsRegistry = ["src/connections/common/EvmFactsRegistry.cairo"]
+
+EthereumHeadersStore = ["src/connections/ethereum/HeadersStore.cairo"]
+EthereumBlockhashesRecipient = ["src/connections/ethereum/BlockhashesRecipient.cairo"]
+
+StarknetStateRootsProcessor = ["src/connections/starknet/StateRootsProcessor.cairo"]
+
+OptimismStateBatchCommitmentRecipient = ["src/connections/optimism/StateBatchCommitmentRecipient.cairo"]
+OptimismStateBatchProcessor = ["src/connections/optimism/StateBatchProcessor.cairo"]
 
 [test]
 disable-hint-validation = true

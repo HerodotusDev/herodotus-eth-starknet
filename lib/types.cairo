@@ -7,6 +7,20 @@ struct Keccak256Hash {
     word_4: felt,
 }
 
+struct Bytes32 {
+    word_1: felt,
+    word_2: felt,
+    word_3: felt,
+    word_4: felt,
+}
+
+struct BedrockOutputRootPreimage {
+    version: Bytes32,
+    l2_block_state_root: Keccak256Hash,
+    l2_withdrawals_storage_root: Keccak256Hash,
+    l2_block_hash: Keccak256Hash,
+}
+
 struct PedersenHash {
     word_1: felt,
     word_2: felt,

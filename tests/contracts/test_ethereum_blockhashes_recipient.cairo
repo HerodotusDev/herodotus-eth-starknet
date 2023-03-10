@@ -128,10 +128,10 @@ func __setup__{syscall_ptr: felt*, range_check_ptr}() {
         ids.relayer_pub_key = pub_key
         context.relayer_pub_key = pub_key
 
-        context.l1_messages_proxy_address = deploy_contract("src/L1MessagesProxy.cairo").contract_address
+        context.l1_messages_proxy_address = deploy_contract("src/connections/ethereum/BlockhashesRecipient.cairo").contract_address
         ids.l1_messages_proxy_address = context.l1_messages_proxy_address
 
-        context.l1_headers_store_addr = deploy_contract("src/L1HeadersStore.cairo", [ids.l1_messages_proxy_address]).contract_address
+        context.l1_headers_store_addr = deploy_contract("src/connections/ethereum/HeadersStore.cairo", [ids.l1_messages_proxy_address]).contract_address
         ids.l1_headers_store_addr = context.l1_headers_store_addr
 
         context.erc20 = deploy_contract(

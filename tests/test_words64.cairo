@@ -2,8 +2,32 @@
 %builtins pedersen range_check ecdsa bitwise
 
 from lib.types import IntsSequence
-from lib.words64 import extract_nibble, extract_nibble_from_words, to_words128, extract_byte
+from lib.words64 import (
+    extract_nibble,
+    extract_nibble_from_words,
+    to_words128,
+    extract_byte,
+    extract_bytes
+)
 from starkware.cairo.common.alloc import alloc
+
+@view
+func test_extract_2_bytes_from_0_index_single_word{range_check_ptr}() -> () {
+    alloc_locals;
+    local word = 0x2f902b505830836;
+    let (local first_2_bytes) = extract_bytes(word, 8, 0, 2);
+    assert first_2_bytes = 0x2f9;
+    return ();
+}
+
+@view
+func test_extract_3_bytes_from_1_index_single_word{range_check_ptr}() -> () {
+    alloc_locals;
+    local word = 0x2f902b505830836;
+    let (local actual) = extract_bytes(word, 8, 1, 3);
+    assert actual = 0xf902b5;
+    return ();
+}
 
 @view
 func test_extract_first_byte_from_single_word{range_check_ptr}() -> () {
