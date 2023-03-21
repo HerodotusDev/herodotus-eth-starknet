@@ -323,66 +323,69 @@ func test_process_invalid_block{syscall_ptr: felt*, range_check_ptr}() {
 func test_process_till_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     alloc_locals;
     local l1_headers_store;
-    let (parent_hash: felt*) = alloc();
-    local block_number;
+
+    let (trusted_parent_hash: felt*) = alloc();
+    local trusted_parent_hash_for_block;
     %{
-        from utils.helpers import chunk_bytes_input, bytes_to_int_big
+        from utils.types import Data
         from mocks.blocks import mocked_blocks
 
-        ids.l1_headers_store = context.l1_headers_store_addr;
-        message = bytearray.fromhex(mocked_blocks[0]["parentHash"].hex()[2:])
-        chunked_message = chunk_bytes_input(message)
-        formatted_words_correct = list(map(bytes_to_int_big, chunked_message))
+        ids.l1_headers_store = context.l1_headers_store_addr
 
-        segments.write_arg(ids.parent_hash, formatted_words_correct)
-        assert len(formatted_words_correct) == 4
-        ids.block_number = mocked_blocks[0]["number"]
+        # Parent hash of 11456152
+        parent_hash_words = Data.from_hex(mocked_blocks[0]["parentHash"].hex()).to_ints().values
+        segments.write_arg(ids.trusted_parent_hash, parent_hash_words)
+
+        assert len(parent_hash_words) == 4
+        ids.trusted_parent_hash_for_block = mocked_blocks[0]["number"]
 
         stop_prank_callable = start_prank(context.relayer_pub_key, target_contract_address=context.l1_headers_store_addr)
     %}
     L1HeadersStore.receive_from_l1(
         contract_address=l1_headers_store,
         parent_hash_len=4,
-        parent_hash=parent_hash,
-        block_number=block_number,
+        parent_hash=trusted_parent_hash,
+        block_number=trusted_parent_hash_for_block,
     );
     %{ stop_prank_callable() %}
 
-    local block_number_process_block;
-    local block_header_rlp_bytes_len;
-    local block_header_rlp_len;
-    let (block_header_rlp: felt*) = alloc();
+    local known_parent_hash_for_block_number;
+    local block_header_to_be_processed_from_msg_rlp_bytes_len;
+    local block_header_to_be_processed_from_msg_rlp_len;
+    let (block_header_to_be_processed_from_msg_rlp: felt*) = alloc();
+
     %{
         from utils.types import Data
         from utils.block_header import build_block_header
         from mocks.blocks import mocked_blocks
 
-        block = mocked_blocks[1]
+        block = mocked_blocks[1] # 11456151
         block_header = build_block_header(block)
         block_rlp = Data.from_bytes(block_header.raw_rlp()).to_ints()
 
-        ids.block_header_rlp_bytes_len = block_rlp.length
-        segments.write_arg(ids.block_header_rlp, block_rlp.values)
-        ids.block_header_rlp_len = len(block_rlp.values)
+        ids.block_header_to_be_processed_from_msg_rlp_bytes_len = block_rlp.length
+        segments.write_arg(ids.block_header_to_be_processed_from_msg_rlp, block_rlp.values)
+        ids.block_header_to_be_processed_from_msg_rlp_len = len(block_rlp.values)
 
         # +1 below is to use child block number (reference block).
-        ids.block_number_process_block = block['number'] + 1
+        ids.known_parent_hash_for_block_number = mocked_blocks[0]['number']
     %}
+
     let (mmr_peaks: felt*) = alloc();
     // Add first node to MMR (reference block is in contract storage).
     L1HeadersStore.process_block_from_message(
         contract_address=l1_headers_store,
-        reference_block_number=block_number_process_block,
-        block_header_rlp_bytes_len=block_header_rlp_bytes_len,
-        block_header_rlp_len=block_header_rlp_len,
-        block_header_rlp=block_header_rlp,
+        reference_block_number=known_parent_hash_for_block_number,
+        block_header_rlp_bytes_len=block_header_to_be_processed_from_msg_rlp_bytes_len,
+        block_header_rlp_len=block_header_to_be_processed_from_msg_rlp_len,
+        block_header_rlp=block_header_to_be_processed_from_msg_rlp,
         mmr_peaks_len=0,
         mmr_peaks=mmr_peaks,
     );
 
     let (local proof: felt*) = alloc();
     let (pedersen_hash) = hash_felts{hash_ptr=pedersen_ptr}(
-        data=block_header_rlp, length=block_header_rlp_len
+        data=block_header_to_be_processed_from_msg_rlp, length=block_header_to_be_processed_from_msg_rlp_len
     );
     let (node1) = hash2{hash_ptr=pedersen_ptr}(1, pedersen_hash);
     assert mmr_peaks[0] = node1;
@@ -465,9 +468,9 @@ func test_process_till_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
         reference_proof_leaf_value=pedersen_hash,
         reference_proof_len=0,
         reference_proof=proof,
-        reference_header_rlp_bytes_len=block_header_rlp_bytes_len,
-        reference_header_rlp_len=block_header_rlp_len,
-        reference_header_rlp=block_header_rlp,
+        reference_header_rlp_bytes_len=block_header_to_be_processed_from_msg_rlp_bytes_len,
+        reference_header_rlp_len=block_header_to_be_processed_from_msg_rlp_len,
+        reference_header_rlp=block_header_to_be_processed_from_msg_rlp,
         block_headers_lens_bytes_len=3,
         block_headers_lens_bytes=block_headers_lens_bytes,
         block_headers_lens_words_len=3,
