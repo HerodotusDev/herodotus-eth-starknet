@@ -18,7 +18,7 @@ from lib.types import (
 )
 
 from starkware.cairo.common.cairo_keccak.keccak import finalize_keccak
-from lib.blockheader_rlp_extractor import decode_state_root
+from lib.blockheader_rlp_extractor import decode_state_root, decode_block_number
 from lib.unsafe_keccak import keccak256
 from lib.trie_proofs import verify_proof
 from lib.ints_to_uint256 import ints_to_uint256
@@ -240,6 +240,8 @@ func prove_account{
     );
     assert_not_zero(mmr_root);
 
+    // TODO: assert block_number === decode(block_proof).block_number
+
     IL1HeadersStore.call_mmr_verify_proof(
         contract_address=headers_store_addr,
         index=block_proof_leaf_index,
@@ -260,6 +262,10 @@ func prove_account{
     local rlp: IntsSequence = IntsSequence(
         block_header_rlp, block_header_rlp_len, block_header_rlp_bytes_len
     );
+
+    let (local decoded_block_number: felt) = decode_block_number(rlp);
+    assert decoded_block_number = block_number;
+
     let (local state_root_raw: Keccak256Hash) = decode_state_root(rlp);
 
     assert_not_zero(state_root_raw.word_1);

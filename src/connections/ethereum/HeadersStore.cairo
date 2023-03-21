@@ -173,7 +173,6 @@ func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check
 // @notice The provided parent block and proof must be valid in order for the function to process the block and update the MMR.
 // If the parent block and proof are valid, the function will update the MMR with the hashed block's contents.
 //
-// @param reference_block_number The reference block number used to retrieve the parent hash for validation (i.e. child block).
 // @param reference_proof_leaf_index The leaf index of the reference proof.
 // @param reference_proof_leaf_value The value of the reference proof.
 // @param reference_proof_len The length of the reference block's proof array.
@@ -191,7 +190,6 @@ func receive_from_l1{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check
 func process_block{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(
-    reference_block_number: felt,
     reference_proof_leaf_index: felt,
     reference_proof_leaf_value: felt,
     reference_proof_len: felt,
@@ -293,7 +291,6 @@ func process_block_from_message{
 func process_till_block{
     pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, bitwise_ptr: BitwiseBuiltin*, range_check_ptr
 }(
-    reference_block_number: felt,
     reference_proof_leaf_index: felt,
     reference_proof_leaf_value: felt,
     reference_proof_len: felt,

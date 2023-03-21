@@ -20,7 +20,6 @@ namespace L1HeadersStore {
     }
 
     func process_block(
-        reference_block_number: felt,
         reference_proof_leaf_index: felt,
         reference_proof_leaf_value: felt,
         reference_proof_len: felt,
@@ -47,7 +46,6 @@ namespace L1HeadersStore {
     }
 
     func process_till_block(
-        reference_block_number: felt,
         reference_proof_leaf_index: felt,
         reference_proof_leaf_value: felt,
         reference_proof_len: felt,
@@ -243,7 +241,6 @@ func test_process_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
 
     L1HeadersStore.process_block(
         contract_address=l1_headers_store,
-        reference_block_number=block_2_number_process_block,
         reference_proof_leaf_index=1,
         reference_proof_leaf_value=pedersen_hash,
         reference_proof_len=0,
@@ -464,7 +461,6 @@ func test_process_till_block{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, ran
 
     L1HeadersStore.process_till_block(
         contract_address=l1_headers_store,
-        reference_block_number=start_block_number,
         reference_proof_leaf_index=1,
         reference_proof_leaf_value=pedersen_hash,
         reference_proof_len=0,

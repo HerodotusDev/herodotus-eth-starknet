@@ -1,5 +1,5 @@
 [project]
-protostar-version = "0.9.1"
+protostar-version = "0.9.2"
 lib-path = "lib"
 
 cairo-path = ["lib/cairo_contracts/src", "lib/cairo_mmr", "lib", "tests"]
@@ -15,7 +15,6 @@ EthereumBlockhashesRecipient = ["src/connections/ethereum/BlockhashesRecipient.c
 StarknetStateRootsProcessor = ["src/connections/starknet/StateRootsProcessor.cairo"]
 
 OptimismStateBatchCommitmentRecipient = ["src/connections/optimism/StateBatchCommitmentRecipient.cairo"]
-OptimismStateBatchProcessor = ["src/connections/optimism/StateBatchProcessor.cairo"]
 
 [test]
 disable-hint-validation = true
@@ -24,3 +23,9 @@ disable-hint-validation = true
 account-address = "0x01c438231cd70f47d1acb8404e51734c1fb4d79ac55813b3e861fb1ef78da0d6"
 block-explorer = "starkscan"
 network = "testnet"
+
+[profile.devnet.project]
+disable-hint-validation = true
+account-address = "0x7f7f6980fd051997e518f118ef602e56af072a09301327aa2a3cdef898f3b29"
+gateway-url = "http://127.0.0.1:5050"
+chain-id = "1536727068981429685321"
