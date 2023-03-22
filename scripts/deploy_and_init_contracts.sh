@@ -97,7 +97,7 @@ printf "BlockhashesRecipient contract address: %s\nHeadersStore contract address
 
 # Inbox init
 
-inputs="l1_messages_sender=$evm_messages_sender l1_headers_store_addr=$headers_store_addr owner=$owner relay_asset_addr=$relay_asset_contract_address required_in_asset_to_relay=$relay_amount"
+inputs="$evm_messages_sender $headers_store_addr $owner $relay_asset_contract_address $relay_amount"
 invokation=$(protostar -p $profile invoke --function "initialize" --contract-address $blockhashes_recipient_addr --inputs $inputs --max-fee auto --wait-for-acceptance --json)
 
 echo $invokation
@@ -116,8 +116,7 @@ else
 fi
 
 # Stake
-inputs="relayer_public_key=$relayer_public_key"
-invokation=$(protostar -p $profile invoke --function "stake" --contract-address $blockhashes_recipient_addr --inputs $inputs --max-fee auto --wait-for-acceptance --json)
+invokation=$(protostar -p $profile invoke --function "stake" --contract-address $blockhashes_recipient_addr --inputs $relayer_public_key --max-fee auto --wait-for-acceptance --json)
 
 echo $invokation
 
