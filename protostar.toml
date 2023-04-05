@@ -27,5 +27,6 @@ network = "testnet"
 [profile.devnet.project]
 disable-hint-validation = true
 account-address = "0x7f7f6980fd051997e518f118ef602e56af072a09301327aa2a3cdef898f3b29"
+private-key-path = "priv.key"
 gateway-url = "http://127.0.0.1:5050"
 chain-id = "1536727068981429685321"

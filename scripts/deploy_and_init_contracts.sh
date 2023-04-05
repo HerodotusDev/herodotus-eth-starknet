@@ -2,6 +2,7 @@
 
 # Note: PROTOSTAR_ACCOUNT_PRIVATE_KEY env variable has to be set.
 # Example for __DEVNET__: PROTOSTAR_ACCOUNT_PRIVATE_KEY=150029774816543015997477495460890485588
+#? Note: Another way is to create a priv.key file in the root of this repo and put 150029774816543015997477495460890485588 in it.
 
 usage="Usage: ./deploy_and_init_contracts.sh [--skip-build] [--skip-stake-approval] --profile XXX --evm_messages_sender ADDR --owner ADDR --relayer_public_key PUB_KEY --relay_asset_contract_address ADDR --relay_amount AMOUNT"
 
@@ -94,6 +95,16 @@ headers_store_addr=$(protostar -p $profile deploy $class_hash_headers_store --in
 evm_facts_registry_addr=$(protostar -p $profile deploy $class_hash_evm_facts_registry --inputs $headers_store_addr --max-fee auto --json --wait-for-acceptance | jq -r '.contract_address')
 
 printf "BlockhashesRecipient contract address: %s\nHeadersStore contract address: %s\nEvmFactsRegistry contract address: %s\n" "$blockhashes_recipient_addr" "$headers_store_addr" "$evm_facts_registry_addr"
+
+#? Create a json file with the contract addresses
+mkdir -p ./deployments
+cat <<EOF > ./deployments/contract_addresses.json
+{
+    "blockhashes_recipient_addr": "$blockhashes_recipient_addr",
+    "headers_store_addr": "$headers_store_addr",
+    "evm_facts_registry_addr": "$evm_facts_registry_addr"
+}
+EOF
 
 # Inbox init
 
