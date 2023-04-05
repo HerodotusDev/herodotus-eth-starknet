@@ -5,12 +5,14 @@ venv
 .python-version
 artifacts
 build
+deployments
 .pytest_cache
 
 **/.DS_Store
 
 secrets.json
 .env
+priv.key
 
 node.json
 
