@@ -28,6 +28,11 @@ mod EVMFactsRegisty {
     }
 
     #[view]
+    fn get_headers_store() -> ContractAddress {
+        headers_store::read()
+    }
+
+    #[view]
     fn get_account_field(_account: felt252, _block: u128, _field: AccountField) -> u256 {
         match _field {
             AccountField::StorageHash(_) => storage_hash::read((_account, _block)),
@@ -54,22 +59,18 @@ mod EVMFactsRegisty {
     }
 
     #[external]
-    fn prove_storage(
+    fn get_storage(
         _block: u128,
         _account: felt252,
         _slot: u256,
-        _mpt_proof: MPTProof,
+        _mpt_proof: MPTProof
         // TODO define type
-    ) {
-        // 1. Verify MMR proof for block_header
-        // 2. Decode block state root from block_header
-        // 3. Verify MPT proof for account
-        // 4. Decode account storage
-        // 5. Verify storage value
-    }
     ) -> u256 {
         // 1. Assert account storage hash has been proven
         // 2. Verify the MPT proof
+        // 3. Verify MPT proof for account
+        // 4. Decode account storage
+        // 5. Verify storage value
         0
-    } 
+    }
 }
