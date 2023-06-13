@@ -58,7 +58,7 @@ mod EVMFactsRegisty {
         // 4. Decode account fields
     }
 
-    #[external]
+    #[view]
     fn get_storage(
         _block: u128,
         _account: felt252,
