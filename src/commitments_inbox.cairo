@@ -1,63 +1,69 @@
-#[contract]
+use starknet::ContractAddress;
+
+#[starknet::interface]
+trait ICommitmentsInbox<TContractState> {
+    fn get_headers_store(self: @TContractState) -> ContractAddress;
+    fn get_l1_message_sender(self: @TContractState) -> felt252;
+    fn get_owner(self: @TContractState) -> ContractAddress;
+
+    fn transfer_ownership(ref self: TContractState, new_owner: ContractAddress);
+    fn rennounce_ownership(ref self: TContractState);
+
+    fn receive_commitment(self: @TContractState, from_address: felt252, blockhash: u256, block_number: u256);
+    fn receive_commitment_owner(self: @TContractState, blockhash: u256, block_number: u256);
+}
+
+#[starknet::contract]
 mod CommitmentsInbox {
     use starknet::{ContractAddress, get_caller_address};
     use zeroable::Zeroable;
 
+    #[storage]
     struct Storage {
         headers_store: ContractAddress,
         l1_message_sender: felt252,
         owner: ContractAddress
     }
 
-    #[constructor]
-    fn constructor(_headers_store: ContractAddress, _l1_message_sender: felt252, _owner: ContractAddress) {
-        headers_store::write(_headers_store);
-        l1_message_sender::write(_l1_message_sender);
-        owner::write(_owner);
-    }
+    #[external(v0)]
+    impl CommitmentsInbox of super::ICommitmentsInbox<ContractState> {
+        fn get_headers_store(self: @ContractState) -> ContractAddress {
+            self.headers_store.read()
+        }
 
-    #[view]
-    fn get_headers_store() -> ContractAddress {
-        headers_store::read()
-    }
+        fn get_l1_message_sender(self: @ContractState) -> felt252 {
+            self.l1_message_sender.read()
+        }
 
-    #[view]
-    fn get_l1_message_sender() -> felt252 {
-        l1_message_sender::read()
-    }
+        fn get_owner(self: @ContractState) -> ContractAddress {
+            self.owner.read()
+        }
 
-    #[view]
-    fn get_owner() -> ContractAddress {
-        owner::read()
-    }
+        fn transfer_ownership(ref self: ContractState, new_owner: ContractAddress) {
+            let caller = get_caller_address();
+            assert(self.owner.read() == caller, 'Only owner');
+            self.owner.write(new_owner);
+        }
 
-    #[external]
-    fn transfer_ownership(_new_owner: ContractAddress) {
-        let caller = get_caller_address();
-        assert(owner::read() == caller, 'Only owner');
-        owner::write(_new_owner);
-    }
+        fn rennounce_ownership(ref self: ContractState) {
+            let caller = get_caller_address();
+            assert(self.owner.read() == caller, 'Only owner');
+            self.owner.write(Zeroable::zero());
+        }
 
-    #[external]
-    fn rennounce_ownership() {
-        let caller = get_caller_address();
-        assert(owner::read() == caller, 'Only owner');
-        owner::write(Zeroable::zero());
-    }
+        // TODO add [l1_handler]
+        fn receive_commitment(self: @ContractState, from_address: felt252, blockhash: u256, block_number: u256) {
+            // TODO return Result with custom error
+            assert(from_address == self.l1_message_sender.read(), 'Invalid sender');
+            
+            // Send to HeadersStore
+        }
 
-    #[l1_handler]
-    fn receive_commitment(_from_address: felt252, _blockhash: u256, _block_number: u256) {
-        // TODO return Result with custom error
-        assert(_from_address == l1_message_sender::read(), 'Invalid sender');
-        
-        // Send to HeadersStore
-    }
+        fn receive_commitment_owner(self: @ContractState, blockhash: u256, block_number: u256) {
+            let caller = get_caller_address();
+            assert(self.owner.read() == caller, 'Only owner');
 
-    #[external]
-    fn receive_commitment_owner(_blockhash: u256, _block_number: u256) {
-        let caller = get_caller_address();
-        assert(owner::read() == caller, 'Only owner');
-
-        // Send to HeadersStore
+            // Send to HeadersStore
+        }
     }
 }
