@@ -1,17 +1,52 @@
-// TODO replace account: felt252 with starknet::EthAddress (not supported yet)
-#[contract]
-mod EVMFactsRegisty {
+use starknet::ContractAddress;
+use cairo_lib::data_structures::mmr::proof::Proof;
+use cairo_lib::utils::types::bytes::Bytes;
+
+#[derive(Drop, Serde)]
+enum AccountField {
+    StorageHash: (),
+    CodeHash: (),
+    Balance: (),
+    Nonce: ()
+}
+
+#[starknet::interface]
+trait IEVMFactsRegistry<TContractState> {
+    fn get_headers_store(self: @TContractState) -> ContractAddress;
+
+    fn get_account_field(self: @TContractState, account: felt252, block: u128, field: AccountField) -> u256;
+
+    fn prove_account(
+        ref self: TContractState, 
+        fields: Array<AccountField>, 
+        block: u128, 
+        account: felt252, 
+        mpt_proof: Span<Bytes>, 
+        mmr_proof: Proof, 
+        block_header: Bytes
+    );
+    fn get_storage(
+        self: @TContractState, 
+        block: u128, 
+        account: felt252, 
+        slot: Bytes, 
+        mpt_proof: Span<Bytes>
+    ) -> u256;
+}
+
+#[starknet::contract]
+mod EVMFactsRegistry {
     use starknet::ContractAddress;
-    use herodotus_eth_starknet::utils::{mpt::MPTProof, mmr::MMRProof};
+    use zeroable::Zeroable;
+    use super::AccountField;
+    use cairo_lib::data_structures::mmr::proof::Proof;
+    use cairo_lib::utils::types::bytes::{Bytes, BytesTryIntoU256};
+    use cairo_lib::data_structures::eth_mpt::MPTTrait;
+    use result::ResultTrait;
+    use option::OptionTrait;
+    use traits::TryInto;
 
-    #[derive(Drop, Serde)]
-    enum AccountField {
-        StorageHash: (),
-        CodeHash: (),
-        Balance: (),
-        Nonce: ()
-    }
-
+    #[storage]
     struct Storage {
         headers_store: ContractAddress,
         
@@ -23,54 +58,58 @@ mod EVMFactsRegisty {
     }
 
     #[constructor]
-    fn constructor(_headers_store: ContractAddress) {
-        headers_store::write(_headers_store);
+    fn constructor(ref self: ContractState, headers_store: ContractAddress) {
+        self.headers_store.write(headers_store);
     }
 
-    #[view]
-    fn get_headers_store() -> ContractAddress {
-        headers_store::read()
-    }
-
-    #[view]
-    fn get_account_field(_account: felt252, _block: u128, _field: AccountField) -> u256 {
-        match _field {
-            AccountField::StorageHash(_) => storage_hash::read((_account, _block)),
-            AccountField::CodeHash(_) => code_hash::read((_account, _block)),
-            AccountField::Balance(_) => balance::read((_account, _block)),
-            AccountField::Nonce(_) => nonce::read((_account, _block))
+    #[external(v0)]
+    impl EVMFactsRegistry of super::IEVMFactsRegistry<ContractState> {
+        fn get_headers_store(self: @ContractState) -> ContractAddress {
+            self.headers_store.read()
         }
-    }
 
-    #[external]
-    fn prove_account(
-        _fields: Array<AccountField>,
-        _block: u128,
-        _account: felt252,
-        _mpt_proof: MPTProof,
-        _mmr_proof: MMRProof,
-        // TODO define type
-        _block_header: felt252
-    ) {
-        // 1. Verify MMR proof for block_header
-        // 2. Decode block state root from block_header
-        // 3. Verify MPT proof for account
-        // 4. Decode account fields
-    }
+        fn get_account_field(self: @ContractState, account: felt252, block: u128, field: AccountField) -> u256 {
+            match field {
+                AccountField::StorageHash(_) => self.storage_hash.read((account, block)),
+                AccountField::CodeHash(_) => self.code_hash.read((account, block)),
+                AccountField::Balance(_) => self.balance.read((account, block)),
+                AccountField::Nonce(_) => self.nonce.read((account, block))
+            }
+        }
 
-    #[view]
-    fn get_storage(
-        _block: u128,
-        _account: felt252,
-        _slot: u256,
-        _mpt_proof: MPTProof
-        // TODO define type
-    ) -> u256 {
-        // 1. Assert account storage hash has been proven
-        // 2. Verify the MPT proof
-        // 3. Verify MPT proof for account
-        // 4. Decode account storage
-        // 5. Verify storage value
-        0
+        fn prove_account(
+            ref self: ContractState, 
+            fields: Array<AccountField>, 
+            block: u128, 
+            account: felt252, 
+            mpt_proof: Span<Bytes>, 
+            mmr_proof: Proof, 
+            block_header: Bytes
+        ) {
+            // TODO
+            // 1. Verify MMR proof for block_header
+            // 2. Decode block state root from block_header
+            // 3. Verify MPT proof for account
+            // 4. Decode account fields
+        }
+
+        fn get_storage(
+            self: @ContractState, 
+            block: u128, 
+            account: felt252, 
+            slot: Bytes,
+            mpt_proof: Span<Bytes>
+        ) -> u256 {
+            let storage_hash = self.storage_hash.read((account, block));
+            assert(storage_hash != Zeroable::zero(), 'Storage hash not proven');
+
+            let mpt = MPTTrait::new(storage_hash);
+            // TOD error handling
+            let value = mpt.verify(slot, mpt_proof).unwrap();
+            let value_u256: Option<u256> = value.try_into();
+
+            // TOD error handling
+            value_u256.unwrap()
+        }
     }
 }
