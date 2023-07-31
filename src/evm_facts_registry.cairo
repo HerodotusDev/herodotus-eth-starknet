@@ -14,12 +14,12 @@ enum AccountField {
 trait IEVMFactsRegistry<TContractState> {
     fn get_headers_store(self: @TContractState) -> ContractAddress;
 
-    fn get_account_field(self: @TContractState, account: felt252, block: u128, field: AccountField) -> u256;
+    fn get_account_field(self: @TContractState, account: felt252, block: u256, field: AccountField) -> u256;
 
     fn prove_account(
         ref self: TContractState, 
-        fields: Array<AccountField>, 
-        block: u128, 
+        fields: Span<AccountField>, 
+        block: u256, 
         account: felt252, 
         mpt_proof: Span<Bytes>, 
         mmr_proof: Proof, 
@@ -27,7 +27,7 @@ trait IEVMFactsRegistry<TContractState> {
     );
     fn get_storage(
         self: @TContractState, 
-        block: u128, 
+        block: u256, 
         account: felt252, 
         slot: Bytes, 
         mpt_proof: Span<Bytes>
@@ -51,10 +51,10 @@ mod EVMFactsRegistry {
         headers_store: ContractAddress,
         
         // (account_address, block_number) => value
-        storage_hash: LegacyMap::<(felt252, u128), u256>,
-        code_hash: LegacyMap::<(felt252, u128), u256>,
-        balance: LegacyMap::<(felt252, u128), u256>,
-        nonce: LegacyMap::<(felt252, u128), u256>
+        storage_hash: LegacyMap::<(felt252, u256), u256>,
+        code_hash: LegacyMap::<(felt252, u256), u256>,
+        balance: LegacyMap::<(felt252, u256), u256>,
+        nonce: LegacyMap::<(felt252, u256), u256>
     }
 
     #[constructor]
@@ -68,7 +68,7 @@ mod EVMFactsRegistry {
             self.headers_store.read()
         }
 
-        fn get_account_field(self: @ContractState, account: felt252, block: u128, field: AccountField) -> u256 {
+        fn get_account_field(self: @ContractState, account: felt252, block: u256, field: AccountField) -> u256 {
             match field {
                 AccountField::StorageHash(_) => self.storage_hash.read((account, block)),
                 AccountField::CodeHash(_) => self.code_hash.read((account, block)),
@@ -79,8 +79,8 @@ mod EVMFactsRegistry {
 
         fn prove_account(
             ref self: ContractState, 
-            fields: Array<AccountField>, 
-            block: u128, 
+            fields: Span<AccountField>, 
+            block: u256, 
             account: felt252, 
             mpt_proof: Span<Bytes>, 
             mmr_proof: Proof, 
@@ -95,7 +95,7 @@ mod EVMFactsRegistry {
 
         fn get_storage(
             self: @ContractState, 
-            block: u128, 
+            block: u256, 
             account: felt252, 
             slot: Bytes,
             mpt_proof: Span<Bytes>
@@ -104,11 +104,11 @@ mod EVMFactsRegistry {
             assert(storage_hash != Zeroable::zero(), 'Storage hash not proven');
 
             let mpt = MPTTrait::new(storage_hash);
-            // TOD error handling
+            // TODO error handling
             let value = mpt.verify(slot, mpt_proof).unwrap();
             let value_u256: Option<u256> = value.try_into();
 
-            // TOD error handling
+            // TODO error handling
             value_u256.unwrap()
         }
     }
