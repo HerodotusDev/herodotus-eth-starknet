@@ -8,7 +8,7 @@ trait ICommitmentsInbox<TContractState> {
     fn get_owner(self: @TContractState) -> ContractAddress;
 
     fn transfer_ownership(ref self: TContractState, new_owner: ContractAddress);
-    fn rennounce_ownership(ref self: TContractState);
+    fn renounce_ownership(ref self: TContractState);
 
     fn receive_commitment(self: @TContractState, from_address: felt252, blockhash: u256, block_number: u256);
     fn receive_commitment_owner(self: @TContractState, blockhash: u256, block_number: u256);
@@ -58,7 +58,7 @@ mod CommitmentsInbox {
             self.owner.write(new_owner);
         }
 
-        fn rennounce_ownership(ref self: ContractState) {
+        fn renounce_ownership(ref self: ContractState) {
             let caller = get_caller_address();
             assert(self.owner.read() == caller, 'Only owner');
             self.owner.write(Zeroable::zero());
