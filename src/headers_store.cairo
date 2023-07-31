@@ -1,5 +1,6 @@
 use starknet::ContractAddress;
 use cairo_lib::data_structures::mmr::peaks::Peaks;
+use cairo_lib::data_structures::mmr::proof::Proof;
 use cairo_lib::utils::types::bytes::Bytes;
 
 #[starknet::interface]
@@ -22,6 +23,14 @@ trait IHeadersStore<TContractState> {
         headers_rlp: Span<Bytes>,
         mmr_peaks: Peaks,
     );
+
+    fn verify_mmr_inclusion(
+        self: @TContractState,
+        index: usize,
+        blockhash: felt252,
+        peaks: Peaks,
+        proof: Proof,
+    ) -> bool;
 }
 
 #[starknet::contract]
@@ -29,6 +38,7 @@ mod HeadersStore {
     use starknet::{ContractAddress, get_caller_address};
     use cairo_lib::data_structures::mmr::mmr::{MMR, MMRTrait};
     use cairo_lib::data_structures::mmr::peaks::Peaks;
+    use cairo_lib::data_structures::mmr::proof::Proof;
     use cairo_lib::utils::types::bytes::{Bytes, BytesTryIntoU256};
     use cairo_lib::hashing::keccak::KeccakTrait;
     use cairo_lib::hashing::poseidon::PoseidonHasher;
@@ -137,6 +147,22 @@ mod HeadersStore {
 
                 i += 1;
             };
+        }
+
+        fn verify_mmr_inclusion(
+            self: @ContractState,
+            index: usize,
+            blockhash: felt252,
+            peaks: Peaks,
+            proof: Proof,
+        ) -> bool {
+            let mmr = self.mmr.read();
+            // TODO error handling
+            if !mmr.verify_proof(index, blockhash, peaks, proof).unwrap()  {
+                return false;
+            };
+
+            true
         }
     }
 
