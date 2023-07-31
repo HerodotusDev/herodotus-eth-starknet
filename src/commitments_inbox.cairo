@@ -18,6 +18,7 @@ trait ICommitmentsInbox<TContractState> {
 mod CommitmentsInbox {
     use starknet::{ContractAddress, get_caller_address};
     use zeroable::Zeroable;
+    use herodotus_eth_starknet::headers_store::{IHeadersStoreDispatcherTrait, IHeadersStoreDispatcher};
 
     #[storage]
     struct Storage {
@@ -65,17 +66,18 @@ mod CommitmentsInbox {
 
         // TODO add [l1_handler]
         fn receive_commitment(self: @ContractState, from_address: felt252, blockhash: u256, block_number: u256) {
-            // TODO return Result with custom error
             assert(from_address == self.l1_message_sender.read(), 'Invalid sender');
             
-            // Send to HeadersStore
+            let contract_address = self.headers_store.read();
+            IHeadersStoreDispatcher { contract_address }.receive_hash(blockhash, block_number);
         }
 
         fn receive_commitment_owner(self: @ContractState, blockhash: u256, block_number: u256) {
             let caller = get_caller_address();
             assert(self.owner.read() == caller, 'Only owner');
 
-            // Send to HeadersStore
+            let contract_address = self.headers_store.read();
+            IHeadersStoreDispatcher { contract_address }.receive_hash(blockhash, block_number);
         }
     }
 }
