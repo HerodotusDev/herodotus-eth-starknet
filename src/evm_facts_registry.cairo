@@ -68,6 +68,28 @@ mod EVMFactsRegistry {
         slot_values: LegacyMap::<(felt252, u256, u256), u256>
     }
 
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        AccountProven: AccountProven,
+        StorageProven: StorageProven
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct AccountProven {
+        account: felt252,
+        block: u256,
+        fields: Span<AccountField>
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct StorageProven {
+        account: felt252,
+        block: u256,
+        slot: u256,
+        value: u256
+    }
+
     #[constructor]
     fn constructor(ref self: ContractState, headers_store: ContractAddress) {
         self.headers_store.write(headers_store);
@@ -127,11 +149,12 @@ mod EVMFactsRegistry {
             let rlp_account = mpt.verify(account, mpt_proof).unwrap();
 
             let (decoded_account, _) = rlp_decode(rlp_account).unwrap();
+            let mut account_felt252 = 0;
             match decoded_account {
                 RLPItem::Bytes(_) => panic_with_felt252('Invalid account rlp'),
                 RLPItem::List(l) => {
                     let mut i: usize = 0;
-                    let account_felt252 = account.try_into().unwrap();
+                    account_felt252 = account.try_into().unwrap();
                     loop {
                         if i == fields.len() {
                             break ();
@@ -161,6 +184,12 @@ mod EVMFactsRegistry {
                     };
                 },
             };
+
+            self.emit(Event::AccountProven(AccountProven {
+                account: account_felt252,
+                block: block_number,
+                fields
+            }));
         }
 
         fn prove_storage(
@@ -178,7 +207,17 @@ mod EVMFactsRegistry {
             let value = mpt.verify(slot, mpt_proof).unwrap();
 
             // TODO error handling
-            self.slot_values.write((account, block, slot.try_into().unwrap()), value.try_into().unwrap());
+            let slot_u256 = slot.try_into().unwrap();
+            let value_u256 = value.try_into().unwrap();
+
+            self.slot_values.write((account, block, slot_u256), value_u256);
+
+            self.emit(Event::StorageProven(StorageProven {
+                account,
+                block,
+                slot: slot_u256,
+                value: value_u256
+            }));
         }
     }
 

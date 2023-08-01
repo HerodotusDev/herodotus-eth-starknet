@@ -10,8 +10,8 @@ trait ICommitmentsInbox<TContractState> {
     fn transfer_ownership(ref self: TContractState, new_owner: ContractAddress);
     fn renounce_ownership(ref self: TContractState);
 
-    fn receive_commitment(self: @TContractState, from_address: felt252, blockhash: u256, block_number: u256);
-    fn receive_commitment_owner(self: @TContractState, blockhash: u256, block_number: u256);
+    fn receive_commitment(ref self: TContractState, from_address: felt252, blockhash: u256, block_number: u256);
+    fn receive_commitment_owner(ref self: TContractState, blockhash: u256, block_number: u256);
 }
 
 #[starknet::contract]
@@ -25,6 +25,31 @@ mod CommitmentsInbox {
         headers_store: ContractAddress,
         l1_message_sender: felt252,
         owner: ContractAddress
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        OwnershipTransferred: OwnershipTransferred,
+        OwnershipRenounced: OwnershipRenounced,
+        CommitmentReceived: CommitmentReceived
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct OwnershipTransferred {
+        previous_owner: ContractAddress,
+        new_owner: ContractAddress
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct OwnershipRenounced {
+        previous_owner: ContractAddress
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct CommitmentReceived {
+        blockhash: u256,
+        block_number: u256
     }
 
     #[constructor]
@@ -56,28 +81,47 @@ mod CommitmentsInbox {
             let caller = get_caller_address();
             assert(self.owner.read() == caller, 'Only owner');
             self.owner.write(new_owner);
+
+            self.emit(Event::OwnershipTransferred(OwnershipTransferred {
+                previous_owner: caller,
+                new_owner
+            }));
         }
 
         fn renounce_ownership(ref self: ContractState) {
             let caller = get_caller_address();
             assert(self.owner.read() == caller, 'Only owner');
             self.owner.write(Zeroable::zero());
+
+            self.emit(Event::OwnershipRenounced(OwnershipRenounced {
+                previous_owner: caller
+            }));
         }
 
         // TODO add [l1_handler]
-        fn receive_commitment(self: @ContractState, from_address: felt252, blockhash: u256, block_number: u256) {
+        fn receive_commitment(ref self: ContractState, from_address: felt252, blockhash: u256, block_number: u256) {
             assert(from_address == self.l1_message_sender.read(), 'Invalid sender');
             
             let contract_address = self.headers_store.read();
             IHeadersStoreDispatcher { contract_address }.receive_hash(blockhash, block_number);
+
+            self.emit(Event::CommitmentReceived(CommitmentReceived {
+                blockhash,
+                block_number
+            }));
         }
 
-        fn receive_commitment_owner(self: @ContractState, blockhash: u256, block_number: u256) {
+        fn receive_commitment_owner(ref self: ContractState, blockhash: u256, block_number: u256) {
             let caller = get_caller_address();
             assert(self.owner.read() == caller, 'Only owner');
 
             let contract_address = self.headers_store.read();
             IHeadersStoreDispatcher { contract_address }.receive_hash(blockhash, block_number);
+
+            self.emit(Event::CommitmentReceived(CommitmentReceived {
+                blockhash,
+                block_number
+            }));
         }
     }
 }

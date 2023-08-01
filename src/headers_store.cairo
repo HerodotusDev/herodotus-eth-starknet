@@ -57,6 +57,26 @@ mod HeadersStore {
         received_blocks: LegacyMap::<u256, u256>
     }
 
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        HashReceived: HashReceived,
+        ProcessedBlock: ProcessedBlock
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct HashReceived {
+        block_number: u256,
+        blockhash: u256
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct ProcessedBlock {
+        block_number: u256,
+        blockhash: u256,
+        blockhash_poseidon: felt252
+    }
+
     #[constructor]
     fn constructor(ref self: ContractState, commitments_inbox: ContractAddress) {
         self.commitments_inbox.write(commitments_inbox);
@@ -86,6 +106,11 @@ mod HeadersStore {
             assert(caller == self.commitments_inbox.read(), 'Only CommitmentsInbox');
 
             self.received_blocks.write(block_number, blockhash);
+
+            self.emit(Event::HashReceived(HashReceived {
+                block_number,
+                blockhash
+            }));
         }
 
         fn process_received_block(
@@ -104,6 +129,12 @@ mod HeadersStore {
 
             let mut mmr = self.mmr.read();
             mmr.append(poseidon_hash, mmr_peaks);
+
+            self.emit(Event::ProcessedBlock(ProcessedBlock {
+                block_number,
+                blockhash,
+                blockhash_poseidon: poseidon_hash
+            }));
         }
 
         fn process_chunk(
@@ -144,6 +175,12 @@ mod HeadersStore {
 
                 let mut mmr = self.mmr.read();
                 mmr.append(poseidon_hash, mmr_peaks);
+
+                self.emit(Event::ProcessedBlock(ProcessedBlock {
+                    block_number: initial_block - i.into(),
+                    blockhash: current_hash,
+                    blockhash_poseidon: poseidon_hash
+                }));
 
                 i += 1;
             };
