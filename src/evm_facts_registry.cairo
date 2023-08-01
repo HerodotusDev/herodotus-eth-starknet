@@ -16,6 +16,7 @@ trait IEVMFactsRegistry<TContractState> {
     fn get_headers_store(self: @TContractState) -> ContractAddress;
 
     fn get_account_field(self: @TContractState, account: felt252, block: u256, field: AccountField) -> u256;
+    fn get_slot_value(self: @TContractState, account: felt252, block: u256, slot: u256) -> u256;
 
     fn prove_account(
         ref self: TContractState, 
@@ -27,13 +28,13 @@ trait IEVMFactsRegistry<TContractState> {
         mmr_peaks: Peaks,
         mmr_proof: Proof, 
     );
-    fn get_storage(
-        self: @TContractState, 
+    fn prove_storage(
+        ref self: TContractState, 
         block: u256, 
         account: felt252, 
         slot: Bytes, 
         mpt_proof: Span<Bytes>
-    ) -> u256;
+    );
 }
 
 #[starknet::contract]
@@ -61,7 +62,10 @@ mod EVMFactsRegistry {
         storage_hash: LegacyMap::<(felt252, u256), u256>,
         code_hash: LegacyMap::<(felt252, u256), u256>,
         balance: LegacyMap::<(felt252, u256), u256>,
-        nonce: LegacyMap::<(felt252, u256), u256>
+        nonce: LegacyMap::<(felt252, u256), u256>,
+
+        // (account_address, block_number, slot) => value
+        slot_values: LegacyMap::<(felt252, u256, u256), u256>
     }
 
     #[constructor]
@@ -82,6 +86,10 @@ mod EVMFactsRegistry {
                 AccountField::Balance(_) => self.balance.read((account, block)),
                 AccountField::Nonce(_) => self.nonce.read((account, block))
             }
+        }
+
+        fn get_slot_value(self: @ContractState, account: felt252, block: u256, slot: u256) -> u256 {
+            self.slot_values.read((account, block, slot))
         }
 
         fn prove_account(
@@ -155,23 +163,22 @@ mod EVMFactsRegistry {
             };
         }
 
-        fn get_storage(
-            self: @ContractState, 
+        fn prove_storage(
+            ref self: ContractState, 
             block: u256, 
             account: felt252, 
             slot: Bytes,
             mpt_proof: Span<Bytes>
-        ) -> u256 {
+        ) {
             let storage_hash = self.storage_hash.read((account, block));
             assert(storage_hash != Zeroable::zero(), 'Storage hash not proven');
 
             let mpt = MPTTrait::new(storage_hash);
             // TODO error handling
             let value = mpt.verify(slot, mpt_proof).unwrap();
-            let value_u256: Option<u256> = value.try_into();
 
             // TODO error handling
-            value_u256.unwrap()
+            self.slot_values.write((account, block, slot.try_into().unwrap()), value.try_into().unwrap());
         }
     }
 
