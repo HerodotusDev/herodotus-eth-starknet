@@ -195,11 +195,7 @@ mod HeadersStore {
         ) -> bool {
             let mmr = self.mmr.read();
             // TODO error handling
-            if !mmr.verify_proof(index, blockhash, peaks, proof).unwrap()  {
-                return false;
-            };
-
-            true
+            mmr.verify_proof(index, blockhash, peaks, proof).unwrap()
         }
     }
 
