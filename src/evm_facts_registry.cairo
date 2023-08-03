@@ -46,7 +46,7 @@ mod EVMFactsRegistry {
     use cairo_lib::data_structures::mmr::peaks::Peaks;
     use cairo_lib::hashing::poseidon::PoseidonHasher;
     use cairo_lib::utils::types::bytes::{Bytes, BytesTryIntoU256, BytesTryIntoFelt252};
-    use cairo_lib::data_structures::eth_mpt::MPTTrait;
+    use cairo_lib::data_structures::eth_mpt::{MPTTrait, MPTNode};
     use cairo_lib::encoding::rlp::{RLPItem, rlp_decode};
     use result::ResultTrait;
     use option::OptionTrait;
@@ -144,9 +144,20 @@ mod EVMFactsRegistry {
                 },
             };
 
-            let mpt = MPTTrait::new(state_root);
+            //let mpt = MPTTrait::new(state_root);
             // TODO error handling
-            let rlp_account = mpt.verify(account, mpt_proof).unwrap();
+            //let rlp_account = mpt.verify(account, mpt_proof).unwrap();
+
+            // TODO mocked verification, keccak not available
+            let leaf_node = MPTTrait::decode_rlp_node(*mpt_proof.at(mpt_proof.len() - 1)).unwrap();
+            let mut rlp_account = ArrayTrait::new().span();
+            match leaf_node {
+                MPTNode::Branch((_, _)) => panic_with_felt252('Invalid leaf node'),
+                MPTNode::Extension((_, _)) => panic_with_felt252('Invalid leaf node'),
+                MPTNode::Leaf((_, v)) => {
+                    rlp_account = v;
+                },
+            }
 
             let (decoded_account, _) = rlp_decode(rlp_account).unwrap();
             let mut account_felt252 = 0;
@@ -202,9 +213,20 @@ mod EVMFactsRegistry {
             let storage_hash = self.storage_hash.read((account, block));
             assert(storage_hash != Zeroable::zero(), 'Storage hash not proven');
 
-            let mpt = MPTTrait::new(storage_hash);
+            //let mpt = MPTTrait::new(storage_hash);
             // TODO error handling
-            let value = mpt.verify(slot, mpt_proof).unwrap();
+            //let value = mpt.verify(slot, mpt_proof).unwrap();
+
+            // TODO mocked verification, keccak not available
+            let leaf_node = MPTTrait::decode_rlp_node(*mpt_proof.at(mpt_proof.len() - 1)).unwrap();
+            let mut value = ArrayTrait::new().span();
+            match leaf_node {
+                MPTNode::Branch((_, _)) => panic_with_felt252('Invalid leaf node'),
+                MPTNode::Extension((_, _)) => panic_with_felt252('Invalid leaf node'),
+                MPTNode::Leaf((_, v)) => {
+                    value = v;
+                },
+            }
 
             // TODO error handling
             let slot_u256 = slot.try_into().unwrap();

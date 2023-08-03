@@ -40,7 +40,7 @@ mod HeadersStore {
     use cairo_lib::data_structures::mmr::peaks::Peaks;
     use cairo_lib::data_structures::mmr::proof::Proof;
     use cairo_lib::utils::types::bytes::{Bytes, BytesTryIntoU256};
-    use cairo_lib::hashing::keccak::KeccakTrait;
+    //use cairo_lib::hashing::keccak::KeccakTrait;
     use cairo_lib::hashing::poseidon::PoseidonHasher;
     use cairo_lib::encoding::rlp::{RLPItem, rlp_decode};
     use zeroable::Zeroable;
@@ -122,8 +122,8 @@ mod HeadersStore {
             let blockhash = self.received_blocks.read(block_number);
             assert(blockhash != Zeroable::zero(), 'Block not received');
 
-            let rlp_hash = KeccakTrait::keccak_cairo(header_rlp);
-            assert(rlp_hash == blockhash, 'Invalid header rlp');
+            //let rlp_hash = KeccakTrait::keccak_cairo(header_rlp);
+            //assert(rlp_hash == blockhash, 'Invalid header rlp');
 
             let poseidon_hash = InternalFunctions::poseidon_hash_rlp(header_rlp);
 
@@ -146,8 +146,8 @@ mod HeadersStore {
             let initial_blockhash = self.received_blocks.read(initial_block);
             assert(initial_blockhash != Zeroable::zero(), 'Block not received');
 
-            let mut rlp_hash = KeccakTrait::keccak_cairo(*headers_rlp.at(0));
-            assert(rlp_hash == initial_blockhash, 'Invalid initial header rlp');
+            //let mut rlp_hash = KeccakTrait::keccak_cairo(*headers_rlp.at(0));
+            //assert(rlp_hash == initial_blockhash, 'Invalid initial header rlp');
 
             let mut i: usize = 1;
             loop {
@@ -168,8 +168,8 @@ mod HeadersStore {
                 };
 
                 let current_rlp = *headers_rlp.at(i);
-                let current_hash = KeccakTrait::keccak_cairo(current_rlp);
-                assert(current_hash == parent_hash, 'Invalid header rlp');
+                //let current_hash = KeccakTrait::keccak_cairo(current_rlp);
+                //assert(current_hash == parent_hash, 'Invalid header rlp');
 
                 let poseidon_hash = InternalFunctions::poseidon_hash_rlp(current_rlp);
 
@@ -178,7 +178,7 @@ mod HeadersStore {
 
                 self.emit(Event::ProcessedBlock(ProcessedBlock {
                     block_number: initial_block - i.into(),
-                    blockhash: current_hash,
+                    blockhash: parent_hash,
                     blockhash_poseidon: poseidon_hash
                 }));
 
