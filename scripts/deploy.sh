@@ -8,17 +8,16 @@ class_hashes=(
 )
 
 # First deployment
-output=$(sncast --profile dev deploy --class-hash "${class_hashes[0]}" --constructor-calldata "0x1 0x1 0x1")
+output=$(sncast --profile dev --wait deploy --class-hash "${class_hashes[0]}" --constructor-calldata '0x1 0x1 0x1')
 contract_addresses[0]=$(echo "$output" | grep -Eo 'contract_address: 0x[a-fA-F0-9]+' | awk -F " " '{print $2}')
+echo "Deployed CommitmentsInbox: ${contract_addresses[0]}"
 
 # Second deployment
-output=$(sncast --profile dev deploy --class-hash "${class_hashes[1]}" --constructor-calldata "${contract_addresses[0]}")
+output=$(sncast --profile dev --wait deploy --class-hash "${class_hashes[1]}" --constructor-calldata "${contract_addresses[0]}")
 contract_addresses[1]=$(echo "$output" | grep -Eo 'contract_address: 0x[a-fA-F0-9]+' | awk -F " " '{print $2}')
+echo "Deployed HeadersStore: ${contract_addresses[1]}"
 
 # Third deployment
 output=$(sncast --profile dev deploy --class-hash "${class_hashes[2]}" --constructor-calldata "${contract_addresses[1]}")
 contract_addresses[2]=$(echo "$output" | grep -Eo 'contract_address: 0x[a-fA-F0-9]+' | awk -F " " '{print $2}')
-
-for address in "${contract_addresses[@]}"; do
-    echo $address
-done
+echo "Deployed FactsRegistry: ${contract_addresses[2]}"
